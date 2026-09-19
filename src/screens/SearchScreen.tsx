@@ -1,10 +1,12 @@
 import { DiscreteSlider } from '../components/DiscreteSlider';
+import { ErrorNotice } from '../components/ErrorNotice';
 import { GenreChips } from '../components/GenreChips';
 import { HotpepperCredit } from '../components/HotpepperCredit';
 import { PinIcon } from '../components/icons';
 import { PreferenceAccordion } from '../components/PreferenceAccordion';
 import styles from '../components/ui.module.css';
 import { BUDGET_OPTIONS, RANGE_OPTIONS, rangeLabel } from '../constants';
+import type { ErrorKind } from '../state/reducer';
 import type { SearchCondition } from '../types';
 
 interface Props {
@@ -14,9 +16,20 @@ interface Props {
   /** ボタンの文言。通常 / 現在地を取得中… / 検索中… */
   actionLabel: string;
   busy: boolean;
+  /** 位置情報・通信の失敗。トップ画面に留まるため、ここで見せる */
+  error: ErrorKind | null;
+  onRetry: () => void;
 }
 
-export function SearchScreen({ condition, onChange, onSearch, actionLabel, busy }: Props) {
+export function SearchScreen({
+  condition,
+  onChange,
+  onSearch,
+  actionLabel,
+  busy,
+  error,
+  onRetry,
+}: Props) {
   const budgetIndex = Math.max(
     0,
     BUDGET_OPTIONS.findIndex((o) => o.max === condition.budgetMax),
@@ -52,6 +65,8 @@ export function SearchScreen({ condition, onChange, onSearch, actionLabel, busy 
         options={RANGE_OPTIONS}
         onChange={(i) => onChange({ ...condition, range: RANGE_OPTIONS[i]?.value ?? 3 })}
       />
+
+      {error && <ErrorNotice kind={error} onRetry={onRetry} />}
 
       {/* 検索前に探索の中心を示す（FE-001 §22） */}
       <p className={styles.scopeCta} style={{ marginTop: 'auto' }}>

@@ -150,6 +150,8 @@ export function App() {
           onSearch={handleSearch}
           actionLabel={actionLabel}
           busy={state.loading || state.locating}
+          error={state.error}
+          onRetry={handleRetry}
         />
       ) : (
         <ResultScreen
