@@ -1,4 +1,4 @@
-import { json } from './http';
+import { HttpError, json } from './http';
 import {
   assertHotPepperSuccess,
   buildHotPepperParams,
@@ -12,6 +12,12 @@ import type { WorkerEnv } from './env';
 
 /** POST /api/search のユースケース（BE-001 §1）。 */
 export async function handleSearch(request: Request, env: WorkerEnv): Promise<Response> {
+  // Secret の登録漏れ（wrangler secret put のし忘れ）を上流の認証エラーに
+  // 化けさせず、設定不備として切り分けられるようにする
+  if (!env.HOTPEPPER_API_KEY) {
+    throw new HttpError(500, 'not configured');
+  }
+
   let body: unknown;
   try {
     body = await request.json();

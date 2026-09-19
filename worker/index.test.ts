@@ -374,3 +374,15 @@ describe('HOTPEPPER_ENDPOINT', () => {
     expect(stub.calls[0]).toContain('http://127.0.0.1:8899/');
   });
 });
+
+/** 設定不備（BE-001 §20）。 */
+describe('APIキー未設定', () => {
+  it('Secretが無ければ500を返し、上流を叩かない', async () => {
+    const stub = stubFetch(hotpepperBody([]));
+
+    const res = await worker.fetch(searchRequest(), { ...env, HOTPEPPER_API_KEY: '' });
+
+    expect(res.status).toBe(500);
+    expect(stub.calls).toHaveLength(0);
+  });
+});
