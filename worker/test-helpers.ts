@@ -10,6 +10,7 @@ export const validRequest: SearchRequest = {
   lng: 139.700258,
   range: 3,
   budgetMax: 4000,
+  includeUnknownBudget: false,
   genreCode: 'G001',
   preferences: { privateRoom: false, freeDrink: true, midnight: true },
   start: 1,

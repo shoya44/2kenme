@@ -59,9 +59,13 @@ export function buildHotPepperParams(request: SearchRequest, apiKey: string): UR
     start: String(request.start),
   });
 
-  const budgetCodes = toBudgetCodes(request.budgetMax);
-  if (budgetCodes.length > 0) {
-    params.set('budget', budgetCodes.join(','));
+  // 予算未登録も含める場合は budget を送らない。HotPepper側で絞ると
+  // 未登録の店舗が除外されるため、絞り込みはB/E側で行う（BE-001 §6）
+  if (!request.includeUnknownBudget) {
+    const budgetCodes = toBudgetCodes(request.budgetMax);
+    if (budgetCodes.length > 0) {
+      params.set('budget', budgetCodes.join(','));
+    }
   }
 
   if (request.genreCode !== null) {

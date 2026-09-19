@@ -5,6 +5,8 @@ export type { BudgetMax, GenreCode, Preferences, RangeCode, Shop };
 /** 検索条件（DATA-001 §3）。 */
 export interface SearchCondition {
   budgetMax: BudgetMax;
+  /** 予算が未登録の店舗も含めるか */
+  includeUnknownBudget: boolean;
   genreCode: GenreCode;
   preferences: Preferences;
   range: RangeCode;

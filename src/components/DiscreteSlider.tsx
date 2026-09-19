@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import styles from './ui.module.css';
 
 interface Props {
@@ -8,6 +10,8 @@ interface Props {
   onChange: (index: number) => void;
   /** 目盛りラベルの出し方。7段階では両端のみにする（FE-001 §5） */
   ticks?: 'all' | 'ends';
+  /** 目盛りの下に置く補助的なコントロール */
+  children?: ReactNode;
 }
 
 /**
@@ -16,7 +20,14 @@ interface Props {
  * input[type=range] をベースにする。カスタム実装はキーボード操作と
  * スクリーンリーダー対応のコストが見合わないため（FE-001 §9）。
  */
-export function DiscreteSlider({ label, index, options, onChange, ticks = 'all' }: Props) {
+export function DiscreteSlider({
+  label,
+  index,
+  options,
+  onChange,
+  ticks = 'all',
+  children,
+}: Props) {
   const current = options[index];
   const first = options[0];
   const last = options[options.length - 1];
@@ -50,6 +61,8 @@ export function DiscreteSlider({ label, index, options, onChange, ticks = 'all' 
           <span key={option.label}>{option.label}</span>
         ))}
       </div>
+
+      {children}
     </div>
   );
 }

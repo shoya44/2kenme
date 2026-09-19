@@ -21,6 +21,7 @@ export async function fetchShops(
     lng: location.lng,
     range: condition.range,
     budgetMax: condition.budgetMax,
+    includeUnknownBudget: condition.includeUnknownBudget,
     genreCode: condition.genreCode,
     preferences: condition.preferences,
     start,

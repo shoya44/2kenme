@@ -42,20 +42,37 @@ export function applyRelax(condition: SearchCondition, level: RelaxLevel): Searc
   return relaxed;
 }
 
+/** その段階が条件を実際に変えるか。 */
+function changesCondition(condition: SearchCondition, level: Exclude<RelaxLevel, 0>): boolean {
+  switch (level) {
+    case 1:
+      return Object.values(condition.preferences).some(Boolean);
+    case 2:
+      return condition.genreCode !== null;
+    case 3:
+      return condition.range < 4;
+    case 4:
+      return condition.budgetMax !== null;
+  }
+}
+
 /**
  * 次に進む緩和段階を返す。これ以上緩和できなければ null。
  *
- * range が既に上限なら段階3を飛ばす（FE-001 §15）。
+ * 条件が実際に変わらない段階は飛ばす（FE-001 §15）。
+ * 例えばこだわりを何も付けていなければ段階1を飛ばす。飛ばさないと
+ * 「こだわり条件を外してさがす」を押しても同じ条件で検索し直すだけになり、
+ * 何が起きたのか分からない。
  */
 export function nextRelaxLevel(
   condition: SearchCondition,
   level: RelaxLevel,
 ): Exclude<RelaxLevel, 0> | null {
-  let next = level + 1;
-
-  if (next === 3 && condition.range >= 4) {
-    next = 4;
+  for (let next = level + 1; next <= MAX_RELAX_LEVEL; next++) {
+    const candidate = next as Exclude<RelaxLevel, 0>;
+    if (changesCondition(condition, candidate)) {
+      return candidate;
+    }
   }
-
-  return next <= MAX_RELAX_LEVEL ? (next as Exclude<RelaxLevel, 0>) : null;
+  return null;
 }

@@ -5,6 +5,7 @@ import type { SearchCondition } from '../types';
 
 const base: SearchCondition = {
   budgetMax: 4000,
+  includeUnknownBudget: true,
   genreCode: 'G001',
   preferences: { privateRoom: true, freeDrink: true, midnight: true },
   range: 3,
@@ -79,7 +80,7 @@ describe('nextRelaxLevel', () => {
     [1, 2],
     [2, 3],
     [3, 4],
-  ] as const)('level %i の次は %i', (current, expected) => {
+  ] as const)('全条件が設定済みなら level %i の次は %i', (current, expected) => {
     expect(nextRelaxLevel(base, current)).toBe(expected);
   });
 
@@ -89,5 +90,46 @@ describe('nextRelaxLevel', () => {
 
   it('range が上限なら段階3を飛ばして4へ', () => {
     expect(nextRelaxLevel({ ...base, range: 4 }, 2)).toBe(4);
+  });
+
+  describe('条件が変わらない段階は飛ばす', () => {
+    it('こだわり未設定なら段階1を飛ばす', () => {
+      const noPrefs = {
+        ...base,
+        preferences: { privateRoom: false, freeDrink: false, midnight: false },
+      };
+
+      expect(nextRelaxLevel(noPrefs, 0)).toBe(2);
+    });
+
+    it('ジャンルがおまかせなら段階2を飛ばす', () => {
+      expect(nextRelaxLevel({ ...base, genreCode: null }, 1)).toBe(3);
+    });
+
+    it('予算が指定なしなら段階4を飛ばす', () => {
+      expect(nextRelaxLevel({ ...base, budgetMax: null }, 3)).toBeNull();
+    });
+
+    it('何も設定していなければ緩和できない', () => {
+      const bare = {
+        ...base,
+        budgetMax: null,
+        genreCode: null,
+        range: 4 as const,
+        preferences: { privateRoom: false, freeDrink: false, midnight: false },
+      };
+
+      expect(nextRelaxLevel(bare, 0)).toBeNull();
+    });
+
+    it('こだわり未設定・ジャンルおまかせなら、いきなり距離の拡大になる', () => {
+      const loose = {
+        ...base,
+        genreCode: null,
+        preferences: { privateRoom: false, freeDrink: false, midnight: false },
+      };
+
+      expect(nextRelaxLevel(loose, 0)).toBe(3);
+    });
   });
 });

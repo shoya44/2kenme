@@ -1,4 +1,4 @@
-import type { BudgetMax, GenreCode, RangeCode } from './types';
+import type { BudgetMax, GenreCode, RangeCode, SearchCondition } from './types';
 
 /** 予算は上限指定（REQ-001 §6.1 / FE-001 §5）。 */
 export interface BudgetOption {
@@ -59,4 +59,22 @@ export function rangeLabel(range: RangeCode): string {
 
 export function genreLabel(code: GenreCode): string {
   return GENRE_OPTIONS.find((o) => o.code === code)?.label ?? 'おまかせ';
+}
+
+/**
+ * 実際に検索した条件を1行で表す。
+ *
+ * 緩和で条件が変わったとき、何で検索しているのかを画面で示すため。
+ */
+export function describeCondition(condition: SearchCondition): string {
+  const prefs = (Object.keys(PREFERENCE_LABELS) as (keyof typeof PREFERENCE_LABELS)[]).filter(
+    (key) => condition.preferences[key],
+  );
+
+  return [
+    condition.budgetMax === null ? '予算 指定なし' : budgetLabel(condition.budgetMax),
+    genreLabel(condition.genreCode),
+    `${rangeLabel(condition.range)}以内`,
+    prefs.length > 0 ? prefs.map((k) => PREFERENCE_LABELS[k]).join('・') : 'こだわりなし',
+  ].join(' / ');
 }

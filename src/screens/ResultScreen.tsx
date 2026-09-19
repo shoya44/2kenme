@@ -5,9 +5,12 @@ import { ResultSkeleton } from '../components/ResultSkeleton';
 import { ShopResult } from '../components/ShopResult';
 import styles from '../components/ui.module.css';
 import type { AppState } from '../state/reducer';
+import type { SearchCondition } from '../types';
 
 interface Props {
   state: AppState;
+  /** 実際に検索に使った条件（緩和を適用したあと） */
+  effectiveCondition: SearchCondition;
   relaxNotice: string | null;
   relaxCta: string | null;
   onNg: () => void;
@@ -19,6 +22,7 @@ interface Props {
 
 export function ResultScreen({
   state,
+  effectiveCondition,
   relaxNotice,
   relaxCta,
   onNg,
@@ -32,11 +36,11 @@ export function ResultScreen({
       {state.error ? (
         <ErrorNotice kind={state.error} onRetry={onRetry} />
       ) : state.noCandidate ? (
-        <NoCandidate relaxCta={relaxCta} onRelax={onRelax} />
+        <NoCandidate condition={effectiveCondition} relaxCta={relaxCta} onRelax={onRelax} />
       ) : state.currentShop ? (
         <ShopResult
           shop={state.currentShop}
-          range={state.condition.range}
+          condition={effectiveCondition}
           relaxNotice={relaxNotice}
           onNg={onNg}
           onOk={onOk}
