@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.wrangler/
+coverage/
+
+# Cloudflare Workers のローカル環境変数。APIキーの実値が入るため絶対にコミットしない
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+
+.DS_Store
+*.log

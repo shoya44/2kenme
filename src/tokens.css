@@ -1,0 +1,25 @@
+/* デザイントークン（FE-001 §25）。ダークモード固定のため配色の切り替えは持たない。 */
+:root {
+  --bg: #111214;
+  --surface: #191a1d;
+  --surface-subtle: rgba(255, 255, 255, 0.04);
+  --text-primary: #f5f5f5;
+  --text-secondary: rgba(255, 255, 255, 0.58);
+  --text-tertiary: rgba(255, 255, 255, 0.38);
+  --border: rgba(255, 255, 255, 0.08);
+  --accent: #d7c2a0;
+  --on-accent: #111214;
+
+  --gutter: 24px;
+  --section-gap: 24px;
+  --control-min-height: 48px;
+  --radius-button: 16px;
+  --radius-photo: 20px;
+  --duration: 200ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration: 0ms;
+  }
+}

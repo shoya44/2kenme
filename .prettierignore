@@ -1,0 +1,7 @@
+dist/
+coverage/
+.wrangler/
+package-lock.json
+worker-configuration.d.ts
+# 設計書は日本語の表をPrettierが崩すため整形対象外
+docs/

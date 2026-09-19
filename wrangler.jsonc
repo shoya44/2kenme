@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tsugidoko",
+  "main": "worker/index.ts",
+  // @cloudflare/vitest-pool-workers が同梱する workerd が対応する最新日付に合わせる。
+  // これより新しい日付にすると worker のテストが起動しない。
+  "compatibility_date": "2026-08-22",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application",
+    // 静的アセットは通常Workerを経由させず、/api/* だけWorkerを先に通す
+    "run_worker_first": ["/api/*"],
+  },
+  "observability": {
+    "enabled": true,
+  },
+  "vars": {
+    // デプロイ先のオリジン。/api/search はこのOriginからのみ受け付ける（BE-001 §5）
+    "ALLOWED_ORIGIN": "http://localhost:5173",
+  },
+  // HOTPEPPER_API_KEY は Secret。wrangler secret put HOTPEPPER_API_KEY で登録する
+}

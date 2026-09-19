@@ -1,0 +1,8 @@
+# コピーして .dev.vars を作る（.dev.vars は gitignore 済み）
+#   cp .dev.vars.example .dev.vars
+#
+# HotPepper APIキーはリクルートWEBサービスで取得する
+#   https://webservice.recruit.co.jp/register/
+# 本番環境へは wrangler secret put HOTPEPPER_API_KEY で登録し、
+# このファイルにも wrangler.jsonc にも実値を書かない。
+HOTPEPPER_API_KEY=your-api-key-here
