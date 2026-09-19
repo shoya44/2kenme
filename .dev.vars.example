@@ -1,0 +1,12 @@
+# コピーして .dev.vars を作る（.dev.vars は gitignore 済み）
+#   cp .dev.vars.example .dev.vars
+#
+# HotPepper APIキーはリクルートWEBサービスで取得する
+#   https://webservice.recruit.co.jp/register/
+# 本番環境へは wrangler secret put HOTPEPPER_API_KEY で登録し、
+# このファイルにも wrangler.jsonc にも実値を書かない。
+HOTPEPPER_API_KEY=your-api-key-here
+
+# 任意: HotPepperのエンドポイントを差し替える（開発時のみ）。
+# 実APIへ到達できない環境で通し確認をするときに使う。未設定なら本番を叩く。
+# HOTPEPPER_ENDPOINT=http://127.0.0.1:8899/
