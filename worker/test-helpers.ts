@@ -34,8 +34,11 @@ export function searchRequest(
   });
 }
 
-export function shop(overrides: Partial<HotPepperShop> = {}): HotPepperShop {
-  return {
+/** 明示的な undefined を渡して項目欠落を再現できるようにする。 */
+type ShopOverrides = { [K in keyof HotPepperShop]?: HotPepperShop[K] | undefined };
+
+export function shop(overrides: ShopOverrides = {}): HotPepperShop {
+  const base: ShopOverrides = {
     id: 'J001',
     name: '炭火焼き鳥 とり吉',
     lat: 35.6915,
@@ -43,8 +46,8 @@ export function shop(overrides: Partial<HotPepperShop> = {}): HotPepperShop {
     photo: { pc: { l: 'https://example.com/l.jpg' }, mobile: { l: 'https://example.com/m.jpg' } },
     urls: { pc: 'https://www.hotpepper.jp/strJ001/' },
     budget: { code: 'B003', name: '3001～4000円' },
-    ...overrides,
   };
+  return { ...base, ...overrides } as HotPepperShop;
 }
 
 export function hotpepperBody(

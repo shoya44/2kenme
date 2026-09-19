@@ -1,6 +1,7 @@
 import { errorResponse, HttpError } from './http';
 import { UpstreamError } from './hotpepper';
 import { handleSearch } from './search';
+import type { WorkerEnv } from './env';
 
 /**
  * ルーティングと共通エラー処理（BE-001 §16）。
@@ -8,7 +9,7 @@ import { handleSearch } from './search';
  * 静的アセットは wrangler.jsonc の run_worker_first により /api/* だけがここへ来る。
  */
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: WorkerEnv): Promise<Response> {
     const startedAt = Date.now();
     const requestId = crypto.randomUUID();
     const { pathname } = new URL(request.url);
@@ -49,7 +50,7 @@ export default {
   },
 };
 
-async function route(request: Request, env: Env, pathname: string): Promise<Response> {
+async function route(request: Request, env: WorkerEnv, pathname: string): Promise<Response> {
   if (pathname !== '/api/search') {
     return errorResponse(404, 'not found');
   }
@@ -69,7 +70,7 @@ async function route(request: Request, env: Env, pathname: string): Promise<Resp
  * APIキー秘匿とは別の目的で、第三者によるHotPepperコール枠の消費を防ぐ。
  * CORSヘッダは返さない。
  */
-export function assertAllowedOrigin(request: Request, env: Env): void {
+export function assertAllowedOrigin(request: Request, env: WorkerEnv): void {
   const origin = request.headers.get('Origin');
   if (origin === null || origin !== env.ALLOWED_ORIGIN) {
     throw new HttpError(403, 'forbidden');

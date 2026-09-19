@@ -8,9 +8,10 @@ import {
 import { mapPaging, mapShop } from './mapper';
 import { validateSearchRequest } from './validation';
 import type { SearchResponse, Shop } from '../shared/api-types';
+import type { WorkerEnv } from './env';
 
 /** POST /api/search のユースケース（BE-001 §1）。 */
-export async function handleSearch(request: Request, env: Env): Promise<Response> {
+export async function handleSearch(request: Request, env: WorkerEnv): Promise<Response> {
   let body: unknown;
   try {
     body = await request.json();
