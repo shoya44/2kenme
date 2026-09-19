@@ -152,7 +152,10 @@ export function App() {
 
   return (
     <div className={styles.app}>
-      <Header onOpenMenu={() => setSheet('menu')} />
+      <Header
+        onOpenMenu={() => setSheet('menu')}
+        onGoHome={() => dispatch({ type: 'backToSearch' })}
+      />
 
       {state.screen === 'search' ? (
         <SearchScreen

@@ -28,6 +28,19 @@
   margin: 0;
 }
 
+.titleButton {
+  /* 見た目は見出しのまま、タップでトップへ戻せるようにする */
+  width: 100%;
+  min-height: var(--control-min-height);
+  padding: 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+
 .iconButton {
   width: 44px;
   height: 44px;
