@@ -318,6 +318,46 @@ describe('エラー', () => {
   });
 });
 
+/** ヘッダー（FE-001 §3）。 */
+describe('ヘッダー', () => {
+  it('アプリ名をタップすると結果画面からトップへ戻る', async () => {
+    const user = userEvent.setup();
+    allowGeolocation();
+    stubSearch(response([shop('a')]));
+    render(<App />);
+    await search(user);
+    await waitFor(() => expect(screen.getByRole('button', { name: /NG/ })).toBeInTheDocument());
+
+    await user.click(screen.getByRole('button', { name: 'つぎどこ' }));
+
+    expect(screen.getByRole('button', { name: 'さがす' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /NG/ })).toBeNull();
+  });
+
+  it('トップへ戻っても条件を保つ', async () => {
+    const user = userEvent.setup();
+    allowGeolocation();
+    stubSearch(response([shop('a')]));
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: 'ラーメン' }));
+    await search(user);
+    await waitFor(() => expect(screen.getByRole('button', { name: /NG/ })).toBeInTheDocument());
+
+    await user.click(screen.getByRole('button', { name: 'つぎどこ' }));
+
+    expect(screen.getByRole('button', { name: 'ラーメン' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  it('見出しとしての意味を保つ', () => {
+    render(<App />);
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('つぎどこ');
+  });
+});
+
 /** 履歴シート（FE-001 §24 / DATA-001 §10）。 */
 describe('履歴シート', () => {
   it('メニューから開ける', async () => {
