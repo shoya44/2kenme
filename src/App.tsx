@@ -147,6 +147,8 @@ export function App() {
 
   const actionLabel = state.locating ? '現在地を取得中…' : state.loading ? '検索中…' : 'さがす';
   const relaxNotice = state.relaxLevel === 0 ? null : RELAX_LABELS[state.relaxLevel].notice;
+  // 画面に出す条件は、緩和を適用したあとの実際の検索条件
+  const effectiveCondition = applyRelax(state.condition, state.relaxLevel);
   const nextLevel = nextRelaxLevel(state.condition, state.relaxLevel);
   const relaxCta = nextLevel === null ? null : RELAX_LABELS[nextLevel].cta;
 
@@ -170,6 +172,7 @@ export function App() {
       ) : (
         <ResultScreen
           state={state}
+          effectiveCondition={effectiveCondition}
           relaxNotice={relaxNotice}
           relaxCta={relaxCta}
           onNg={() => dispatch({ type: 'ng' })}

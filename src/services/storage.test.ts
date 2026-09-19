@@ -22,6 +22,7 @@ import type { SearchCondition, Shop } from '../types';
 
 const condition: SearchCondition = {
   budgetMax: 3000,
+  includeUnknownBudget: true,
   genreCode: 'G012',
   preferences: { privateRoom: true, freeDrink: false, midnight: true },
   range: 2,

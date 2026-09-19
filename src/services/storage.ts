@@ -19,6 +19,8 @@ export const HISTORY_LIMIT = 20;
 
 export const DEFAULT_CONDITION: SearchCondition = {
   budgetMax: 4000,
+  // 予算未登録というだけで候補から外すと極端に少なくなるため、既定で含める
+  includeUnknownBudget: true,
   genreCode: null,
   preferences: { privateRoom: false, freeDrink: false, midnight: false },
   range: 3,
@@ -106,6 +108,7 @@ function isValidCondition(value: unknown): value is SearchCondition {
   const c = value as Partial<SearchCondition>;
   return (
     (c.budgetMax === null || typeof c.budgetMax === 'number') &&
+    (c.includeUnknownBudget === undefined || typeof c.includeUnknownBudget === 'boolean') &&
     (c.genreCode === null || typeof c.genreCode === 'string') &&
     typeof c.range === 'number' &&
     c.range >= 1 &&

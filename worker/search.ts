@@ -5,6 +5,7 @@ import {
   fetchHotPepper,
   UpstreamError,
 } from './hotpepper';
+import { isWithinBudgetMax } from './budget';
 import { mapPaging, mapShop } from './mapper';
 import { validateSearchRequest } from './validation';
 import type { SearchResponse, Shop } from '../shared/api-types';
@@ -32,7 +33,18 @@ export async function handleSearch(request: Request, env: WorkerEnv): Promise<Re
   assertHotPepperSuccess(upstream);
 
   const shops: Shop[] = [];
+  let droppedByBudget = 0;
+
   for (const raw of upstream.results?.shop ?? []) {
+    // 未登録を含める場合はHotPepperへ予算を渡していないので、ここで絞る
+    if (
+      searchRequest.includeUnknownBudget &&
+      !isWithinBudgetMax(raw.budget?.code, searchRequest.budgetMax)
+    ) {
+      droppedByBudget += 1;
+      continue;
+    }
+
     const shop = mapShop(raw, searchRequest.lat, searchRequest.lng);
     if (shop) {
       shops.push(shop);
@@ -46,6 +58,8 @@ export async function handleSearch(request: Request, env: WorkerEnv): Promise<Re
     resultsAvailable: Number(upstream.results?.results_available ?? 0),
     returned: shops.length,
     budgetCodes: params.get('budget')?.split(',').length ?? 0,
+    includeUnknownBudget: searchRequest.includeUnknownBudget,
+    droppedByBudget,
     genre: searchRequest.genreCode ?? 'any',
     range: searchRequest.range,
     preferences: Object.values(searchRequest.preferences).filter(Boolean).length,

@@ -1,3 +1,4 @@
+import { BudgetSection } from '../components/BudgetSection';
 import { DiscreteSlider } from '../components/DiscreteSlider';
 import { ErrorNotice } from '../components/ErrorNotice';
 import { GenreChips } from '../components/GenreChips';
@@ -5,7 +6,7 @@ import { HotpepperCredit } from '../components/HotpepperCredit';
 import { PinIcon } from '../components/icons';
 import { PreferenceAccordion } from '../components/PreferenceAccordion';
 import styles from '../components/ui.module.css';
-import { BUDGET_OPTIONS, RANGE_OPTIONS, rangeLabel } from '../constants';
+import { RANGE_OPTIONS, rangeLabel } from '../constants';
 import type { ErrorKind } from '../state/reducer';
 import type { SearchCondition } from '../types';
 
@@ -30,10 +31,6 @@ export function SearchScreen({
   error,
   onRetry,
 }: Props) {
-  const budgetIndex = Math.max(
-    0,
-    BUDGET_OPTIONS.findIndex((o) => o.max === condition.budgetMax),
-  );
   const rangeIndex = Math.max(
     0,
     RANGE_OPTIONS.findIndex((o) => o.value === condition.range),
@@ -41,12 +38,11 @@ export function SearchScreen({
 
   return (
     <div className={styles.body}>
-      <DiscreteSlider
-        label="予算"
-        index={budgetIndex}
-        options={BUDGET_OPTIONS}
-        ticks="ends"
-        onChange={(i) => onChange({ ...condition, budgetMax: BUDGET_OPTIONS[i]?.max ?? null })}
+      <BudgetSection
+        budgetMax={condition.budgetMax}
+        includeUnknownBudget={condition.includeUnknownBudget}
+        onChangeBudget={(budgetMax) => onChange({ ...condition, budgetMax })}
+        onChangeInclude={(includeUnknownBudget) => onChange({ ...condition, includeUnknownBudget })}
       />
 
       <GenreChips

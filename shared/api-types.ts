@@ -31,6 +31,14 @@ export interface SearchRequest {
   lng: number;
   range: RangeCode;
   budgetMax: BudgetMax;
+  /**
+   * 予算が未登録の店舗も候補に含めるか。
+   *
+   * HotPepperの予算絞り込みは店舗が登録した予算帯との一致で行うため、
+   * 未登録の店舗は問答無用で除外される。true のときは予算パラメータを
+   * 送らず、B/E側で「予算内 または 未登録」に絞る。
+   */
+  includeUnknownBudget: boolean;
   genreCode: GenreCode;
   preferences: Preferences;
   /** 1以上の整数。HotPepperのページング開始位置 */

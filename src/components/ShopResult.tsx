@@ -1,4 +1,4 @@
-import { rangeLabel } from '../constants';
+import { describeCondition, rangeLabel } from '../constants';
 import {
   CheckIcon,
   ChevronRightIcon,
@@ -9,11 +9,12 @@ import {
   YenIcon,
 } from './icons';
 import styles from './ui.module.css';
-import type { RangeCode, Shop } from '../types';
+import type { SearchCondition, Shop } from '../types';
 
 interface Props {
   shop: Shop;
-  range: RangeCode;
+  /** 実際に検索に使った条件（緩和を適用したあと） */
+  condition: SearchCondition;
   relaxNotice: string | null;
   onNg: () => void;
   onOk: () => void;
@@ -21,15 +22,18 @@ interface Props {
 }
 
 /** 表示項目は仕様で限定する。評価・レビュー・地図は出さない（FE-001 §11）。 */
-export function ShopResult({ shop, range, relaxNotice, onNg, onOk, disabled }: Props) {
+export function ShopResult({ shop, condition, relaxNotice, onNg, onOk, disabled }: Props) {
   return (
     <>
       <p className={styles.scope}>
         <PinIcon size={15} />
-        現在地から半径{rangeLabel(range)}以内
+        現在地から半径{rangeLabel(condition.range)}以内
       </p>
 
       {relaxNotice && <p className={styles.relaxNotice}>{relaxNotice}</p>}
+
+      {/* 何で検索した結果なのかを常に示す。緩和で条件が変わるため */}
+      <p className={styles.conditionSummary}>{describeCondition(condition)}</p>
 
       <div className={styles.photo}>
         {shop.photoUrl && <img src={shop.photoUrl} alt="" loading="lazy" />}

@@ -34,3 +34,23 @@ export function toBudgetCodes(budgetMax: BudgetMax, limit = BUDGET_CODE_LIMIT): 
 
   return codes;
 }
+
+/**
+ * 店舗の予算コードが上限内かを判定する。
+ *
+ * 予算が未登録（コードなし）の店舗は `true` を返す。HotPepperの絞り込みでは
+ * 一律に除外されてしまうが、「予算未登録も含める」ときは候補に残すため。
+ */
+export function isWithinBudgetMax(code: string | undefined, budgetMax: BudgetMax): boolean {
+  if (budgetMax === null || !code) {
+    return true;
+  }
+
+  const entry = BUDGET_MASTER.find((e) => e.code === code);
+  if (!entry) {
+    // マスタにないコード。生成物が古い可能性があるので落とさず残す
+    return true;
+  }
+
+  return entry.max !== null && entry.max <= budgetMax;
+}

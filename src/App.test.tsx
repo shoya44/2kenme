@@ -37,7 +37,7 @@ function denyGeolocation() {
 }
 
 function stubSearch(...responses: SearchResponse[]) {
-  const fetchMock = vi.fn(async () => {
+  const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) => {
     const body = responses.length > 1 ? responses.shift() : responses[0];
     return new Response(JSON.stringify(body), {
       status: 200,
@@ -136,6 +136,39 @@ describe('トップ画面', () => {
     render(<App />);
 
     expect(screen.getByText(/現在地から半径1km以内でさがします/)).toBeInTheDocument();
+  });
+
+  it('予算未登録を含めるトグルがあり、既定でオン', () => {
+    render(<App />);
+
+    expect(screen.getByLabelText('予算未登録の店も含める')).toBeChecked();
+  });
+
+  it('予算「指定なし」ではトグルを無効にする（意味を持たないため）', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const slider = screen.getByRole('slider', { name: '予算' });
+
+    // 右端＝指定なし
+    fireEvent.change(slider, { target: { value: '6' } });
+
+    expect(slider).toHaveAttribute('aria-valuetext', '指定なし');
+    expect(screen.getByLabelText('予算未登録の店も含める')).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'おまかせ' }));
+  });
+
+  it('トグルの状態をAPIへ渡す', async () => {
+    const user = userEvent.setup();
+    allowGeolocation();
+    const fetchMock = stubSearch(response([shop('a')]));
+    render(<App />);
+
+    await user.click(screen.getByLabelText('予算未登録の店も含める'));
+    await search(user);
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+    expect(body.includeUnknownBudget).toBe(false);
   });
 
   it('HotPepperクレジットを表示する', () => {
@@ -267,6 +300,32 @@ describe('候補なし', () => {
     expect(screen.getByText('候補が見つかりませんでした')).toBeInTheDocument();
   });
 
+  it('こだわり未設定なら「こだわりを外す」は提案しない（条件が変わらないため）', async () => {
+    const user = userEvent.setup();
+    allowGeolocation();
+    stubSearch(response([]));
+    render(<App />);
+    await search(user);
+    await waitFor(() => expect(screen.getByText('候補が見つかりませんでした')).toBeInTheDocument());
+
+    // 初期条件はこだわり未設定・ジャンルおまかせなので、次は距離の拡大になる
+    expect(screen.queryByRole('button', { name: 'こだわり条件を外してさがす' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'もう少し広い範囲でさがす' })).toBeInTheDocument();
+  });
+
+  it('こだわりを設定していれば、それを外す提案が出る', async () => {
+    const user = userEvent.setup();
+    allowGeolocation();
+    stubSearch(response([]));
+    render(<App />);
+    await user.click(screen.getByText('こだわり'));
+    await user.click(screen.getByLabelText('個室'));
+    await search(user);
+    await waitFor(() => expect(screen.getByText('候補が見つかりませんでした')).toBeInTheDocument());
+
+    expect(screen.getByRole('button', { name: 'こだわり条件を外してさがす' })).toBeInTheDocument();
+  });
+
   it('緩和CTAを押すと再検索し、緩和内容を表示する', async () => {
     const user = userEvent.setup();
     allowGeolocation();
@@ -274,15 +333,45 @@ describe('候補なし', () => {
     render(<App />);
     await search(user);
     await waitFor(() =>
-      expect(
-        screen.getByRole('button', { name: 'こだわり条件を外してさがす' }),
-      ).toBeInTheDocument(),
+      expect(screen.getByRole('button', { name: 'もう少し広い範囲でさがす' })).toBeInTheDocument(),
     );
 
-    await user.click(screen.getByRole('button', { name: 'こだわり条件を外してさがす' }));
+    await user.click(screen.getByRole('button', { name: 'もう少し広い範囲でさがす' }));
+
+    await waitFor(() => expect(screen.getByText('範囲を広げて再検索しました')).toBeInTheDocument());
+  });
+
+  it('候補なし画面に、実際に検索した条件を表示する', async () => {
+    const user = userEvent.setup();
+    allowGeolocation();
+    stubSearch(response([]));
+    render(<App />);
+    await search(user);
 
     await waitFor(() =>
-      expect(screen.getByText('こだわり条件を外して再検索しました')).toBeInTheDocument(),
+      expect(
+        screen.getByText(/4,000円以内 \/ おまかせ \/ 1km以内 \/ こだわりなし/),
+      ).toBeInTheDocument(),
+    );
+  });
+
+  it('緩和後は、緩和を反映した条件を表示する', async () => {
+    const user = userEvent.setup();
+    allowGeolocation();
+    stubSearch(response([]), response([shop('a')]));
+    render(<App />);
+    await search(user);
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'もう少し広い範囲でさがす' })).toBeInTheDocument(),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'もう少し広い範囲でさがす' }));
+
+    // 距離が 1km → 2km になったことが条件表示に出る
+    await waitFor(() =>
+      expect(
+        screen.getByText('4,000円以内 / おまかせ / 2km以内 / こだわりなし'),
+      ).toBeInTheDocument(),
     );
   });
 });

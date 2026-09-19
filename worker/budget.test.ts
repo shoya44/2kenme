@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { BUDGET_MASTER } from './budget-master.generated';
-import { toBudgetCodes } from './budget';
+import { isWithinBudgetMax, toBudgetCodes } from './budget';
 
 /** 予算上限 → 予算コード変換（BE-001 §6 / TEST-001 §4）。 */
 describe('toBudgetCodes', () => {
@@ -74,5 +74,42 @@ describe('BUDGET_MASTER', () => {
     for (const max of [2000, 3000, 4000, 5000, 7000, 10000] as const) {
       expect(toBudgetCodes(max).length).toBeGreaterThan(0);
     }
+  });
+});
+
+/** 予算未登録の扱い（BE-001 §6）。 */
+describe('isWithinBudgetMax', () => {
+  it('上限が指定なしなら常に通す', () => {
+    expect(isWithinBudgetMax('B014', null)).toBe(true);
+  });
+
+  it('予算未登録（コードなし）は通す', () => {
+    expect(isWithinBudgetMax(undefined, 2000)).toBe(true);
+    expect(isWithinBudgetMax('', 2000)).toBe(true);
+  });
+
+  it('上限以下の帯は通す', () => {
+    const within = BUDGET_MASTER.find((e) => e.max !== null && e.max <= 3000);
+
+    expect(within).toBeDefined();
+    expect(isWithinBudgetMax(within?.code, 3000)).toBe(true);
+  });
+
+  it('上限を超える帯は落とす', () => {
+    const over = BUDGET_MASTER.find((e) => e.max !== null && e.max > 3000);
+
+    expect(over).toBeDefined();
+    expect(isWithinBudgetMax(over?.code, 3000)).toBe(false);
+  });
+
+  it('上限なしの帯は落とす', () => {
+    const openEnded = BUDGET_MASTER.find((e) => e.max === null);
+
+    expect(openEnded).toBeDefined();
+    expect(isWithinBudgetMax(openEnded?.code, 10000)).toBe(false);
+  });
+
+  it('マスタに無いコードは落とさない（生成物が古い可能性がある）', () => {
+    expect(isWithinBudgetMax('B999', 2000)).toBe(true);
   });
 });

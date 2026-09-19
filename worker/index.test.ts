@@ -1,6 +1,7 @@
 import { SELF } from 'cloudflare:test';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { BUDGET_MASTER } from './budget-master.generated';
 import type { WorkerEnv } from './env';
 import worker from './index';
 import {
@@ -448,5 +449,79 @@ describe('診断ログ', () => {
 
     expect(dump).not.toContain(String(validRequest.lat));
     expect(dump).not.toContain('とり吉');
+  });
+});
+
+/** 予算未登録を含める（BE-001 §6）。 */
+describe('includeUnknownBudget', () => {
+  const withBudget = (code: string, id: string) => shop({ id, budget: { code, name: 'x' } });
+
+  it('false のときは HotPepper 側で絞る（budgetを送る）', async () => {
+    const stub = stubFetch(hotpepperBody([]));
+
+    await call(searchRequest({ ...validRequest, includeUnknownBudget: false, budgetMax: 3000 }));
+
+    expect(paramsOf(stub).has('budget')).toBe(true);
+  });
+
+  it('true のときは budget を送らず、B/E側で絞る', async () => {
+    const stub = stubFetch(hotpepperBody([]));
+
+    await call(searchRequest({ ...validRequest, includeUnknownBudget: true, budgetMax: 3000 }));
+
+    expect(paramsOf(stub).has('budget')).toBe(false);
+  });
+
+  it('true のとき、予算未登録の店を残す', async () => {
+    stubFetch(hotpepperBody([shop({ id: 'unknown', budget: undefined })]));
+
+    const res = await call(
+      searchRequest({ ...validRequest, includeUnknownBudget: true, budgetMax: 2000 }),
+    );
+    const body = (await res.json()) as { shops: { id: string }[] };
+
+    expect(body.shops.map((s) => s.id)).toEqual(['unknown']);
+  });
+
+  it('true のとき、上限を超える店は落とす', async () => {
+    const over = BUDGET_MASTER.find((e) => e.max !== null && e.max > 3000);
+    const within = BUDGET_MASTER.find((e) => e.max !== null && e.max <= 3000);
+    stubFetch(
+      hotpepperBody([
+        withBudget(over?.code ?? '', 'over'),
+        withBudget(within?.code ?? '', 'within'),
+        shop({ id: 'unknown', budget: undefined }),
+      ]),
+    );
+
+    const res = await call(
+      searchRequest({ ...validRequest, includeUnknownBudget: true, budgetMax: 3000 }),
+    );
+    const body = (await res.json()) as { shops: { id: string }[] };
+
+    expect(body.shops.map((s) => s.id)).toEqual(['within', 'unknown']);
+  });
+
+  it('上限が指定なしなら、true でも全て残す', async () => {
+    const over = BUDGET_MASTER.find((e) => e.max !== null && e.max > 3000);
+    stubFetch(hotpepperBody([withBudget(over?.code ?? '', 'over')]));
+
+    const res = await call(
+      searchRequest({ ...validRequest, includeUnknownBudget: true, budgetMax: null }),
+    );
+    const body = (await res.json()) as { shops: { id: string }[] };
+
+    expect(body.shops.map((s) => s.id)).toEqual(['over']);
+  });
+
+  it('booleanでなければ400', async () => {
+    const stub = stubFetch(hotpepperBody([]));
+
+    const res = await call(
+      searchRequest({ ...validRequest, includeUnknownBudget: 'yes' as unknown as boolean }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(stub.calls).toHaveLength(0);
   });
 });

@@ -41,6 +41,13 @@ function assertPreferences(value: unknown): Preferences {
   };
 }
 
+function assertBoolean(value: unknown, field: string): boolean {
+  if (typeof value !== 'boolean') {
+    bad(`invalid ${field}`);
+  }
+  return value;
+}
+
 function assertBudgetMax(value: unknown): BudgetMax {
   if (value === null) {
     return null;
@@ -90,6 +97,7 @@ export function validateSearchRequest(body: unknown): SearchRequest {
     lng: assertFiniteInRange(body.lng, -180, 180, 'lng'),
     range: assertRange(body.range),
     budgetMax: assertBudgetMax(body.budgetMax),
+    includeUnknownBudget: assertBoolean(body.includeUnknownBudget, 'includeUnknownBudget'),
     genreCode: assertGenreCode(body.genreCode),
     preferences: assertPreferences(body.preferences),
     start: assertStart(body.start),
