@@ -8,8 +8,14 @@
 export interface WorkerEnv {
   /** HotPepper APIキー。Cloudflare Secret */
   HOTPEPPER_API_KEY: string;
-  /** /api/search を許可するOrigin */
-  ALLOWED_ORIGIN: string;
+  /**
+   * /api/search を許可するOrigin。
+   *
+   * 未設定なら Worker 自身のオリジンを使う。静的アセットと API は
+   * 同じ Worker が配信するため、本番では設定不要（BE-001 §5）。
+   * F/Eとは別オリジンで動かす開発時だけ指定する。
+   */
+  ALLOWED_ORIGIN?: string;
   /**
    * HotPepperのエンドポイントを差し替える（開発時のみ）。
    * 未設定なら本番のエンドポイントを使う。

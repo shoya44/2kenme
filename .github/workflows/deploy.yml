@@ -3,6 +3,8 @@ name: Deploy
 on:
   push:
     branches: [main]
+  # 手動でも実行できるようにする（GitHubのWeb UIから押せる）
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -17,16 +19,45 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v5
+      # Secretsが未設定のうちは失敗させずスキップする。
+      # 設定前からmainが赤くなるのを避けるため
+      - id: check
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$TOKEN" ] && [ -n "$ACCOUNT" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "### デプロイをスキップしました"
+              echo
+              echo "リポジトリの Settings → Secrets and variables → Actions に"
+              echo "\`CLOUDFLARE_API_TOKEN\` と \`CLOUDFLARE_ACCOUNT_ID\` を登録すると動きます。"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - if: steps.check.outputs.ready == 'true'
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
 
-      - run: npm ci
-      - run: npm run build
+      - if: steps.check.outputs.ready == 'true'
+        run: npm ci
 
-      - uses: cloudflare/wrangler-action@v3
+      - if: steps.check.outputs.ready == 'true'
+        run: npm run build
+
+      # HOTPEPPER_API_KEY は GitHub Secrets から Worker の Secret へ反映する。
+      # ターミナルでの wrangler secret put が不要になる
+      - if: steps.check.outputs.ready == 'true'
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      # HOTPEPPER_API_KEY は wrangler secret put で事前に登録する。CIからは投入しない。
+          secrets: |
+            HOTPEPPER_API_KEY
+        env:
+          HOTPEPPER_API_KEY: ${{ secrets.HOTPEPPER_API_KEY }}

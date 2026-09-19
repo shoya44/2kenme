@@ -14,9 +14,9 @@
   "observability": {
     "enabled": true,
   },
-  "vars": {
-    // デプロイ先のオリジン。/api/search はこのOriginからのみ受け付ける（BE-001 §5）
-    "ALLOWED_ORIGIN": "http://localhost:5173",
-  },
-  // HOTPEPPER_API_KEY は Secret。wrangler secret put HOTPEPPER_API_KEY で登録する
+  // HOTPEPPER_API_KEY は Secret。デプロイ時に登録する。
+  //
+  // ALLOWED_ORIGIN は設定しない。未設定なら Worker 自身のオリジンを許可する（BE-001 §5）。
+  // 静的アセットとAPIは同じWorkerが配信するため、本番では設定不要。
+  // F/Eを別ポートで動かす開発時だけ .dev.vars で指定する
 }
