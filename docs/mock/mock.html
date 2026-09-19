@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>つぎどこ モック</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#111214;
+  --surface:#191A1D;
+  --surface-subtle:rgba(255,255,255,.04);
+  --text-primary:#F5F5F5;
+  --text-secondary:rgba(255,255,255,.58);
+  --text-tertiary:rgba(255,255,255,.38);
+  --border:rgba(255,255,255,.08);
+  --accent:#D7C2A0;
+  --on-accent:#111214;
+  --gutter:24px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased}
+body{
+  background:#0A0A0B;
+  font-family:"Noto Sans JP",system-ui,sans-serif;
+  display:flex;flex-wrap:wrap;gap:40px;padding:40px;
+}
+
+/* ---------- 端末フレーム ---------- */
+.device{
+  width:414px;height:868px;
+  background:#0E0E10;
+  border-radius:60px;
+  padding:12px;
+  box-shadow:0 0 0 2px #232326, 0 0 0 5px #131315;
+  flex:0 0 auto;
+}
+.screen{
+  position:relative;
+  width:390px;height:844px;
+  background:var(--bg);
+  border-radius:48px;
+  overflow:hidden;
+  color:var(--text-primary);
+  display:flex;flex-direction:column;
+}
+
+/* ---------- ステータスバー ---------- */
+.statusbar{
+  height:54px;flex:0 0 auto;
+  display:flex;align-items:flex-end;justify-content:space-between;
+  padding:0 32px 6px;
+  font-size:15px;font-weight:600;letter-spacing:.2px;
+}
+.island{
+  position:absolute;top:11px;left:50%;transform:translateX(-50%);
+  width:125px;height:36px;border-radius:20px;background:#000;z-index:5;
+}
+.status-icons{display:flex;align-items:center;gap:6px}
+
+/* ---------- ヘッダー ---------- */
+.header{
+  flex:0 0 auto;
+  height:58px;
+  display:grid;grid-template-columns:44px 1fr 44px;align-items:center;
+  padding:0 16px;
+  border-bottom:1px solid var(--border);
+}
+.header .title{
+  text-align:center;font-size:20px;font-weight:600;letter-spacing:.08em;
+}
+.iconbtn{
+  width:44px;height:44px;display:grid;place-items:center;
+  color:var(--text-primary);
+}
+
+/* ---------- 本文共通 ---------- */
+.body{flex:1 1 auto;overflow:hidden;display:flex;flex-direction:column}
+.homebar{
+  flex:0 0 auto;height:34px;display:grid;place-items:center;
+}
+.homebar i{display:block;width:140px;height:5px;border-radius:3px;background:rgba(255,255,255,.85)}
+
+.section{padding:22px var(--gutter)}
+.section + .section{border-top:1px solid var(--border)}
+.rowhead{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px}
+.rowhead .label{font-size:17px;font-weight:600}
+.rowhead .value{font-size:17px;font-weight:500;color:var(--text-primary)}
+
+/* ---------- スライダー ---------- */
+.slider{position:relative;height:14px;margin:0 8px}
+.slider .track{
+  position:absolute;top:50%;left:0;right:0;height:2px;margin-top:-1px;
+  background:rgba(255,255,255,.16);
+}
+.slider .dots{position:absolute;inset:0;display:flex;justify-content:space-between;align-items:center}
+.slider .dots span{
+  width:12px;height:12px;border-radius:50%;background:#3A3B3E;
+}
+.slider .dots span.on{
+  width:20px;height:20px;background:var(--accent);
+  box-shadow:0 0 0 4px rgba(215,194,160,.12);
+}
+.ticks{
+  display:flex;justify-content:space-between;margin:14px 2px 0;
+  font-size:12px;color:var(--text-tertiary);
+}
+.ticks b{font-weight:500;color:var(--text-secondary)}
+.ticks.ends{justify-content:space-between}
+
+/* ---------- チップ ---------- */
+.chips{display:flex;gap:10px;flex-wrap:nowrap;overflow:hidden;margin:0 -2px;padding:0 2px;
+  -webkit-mask-image:linear-gradient(90deg,#000 0,#000 86%,transparent 100%);
+          mask-image:linear-gradient(90deg,#000 0,#000 86%,transparent 100%);}
+.chip{
+  flex:0 0 auto;
+  height:44px;padding:0 20px;border-radius:22px;
+  display:flex;align-items:center;
+  border:1px solid var(--border);background:var(--surface-subtle);
+  font-size:15px;color:var(--text-secondary);white-space:nowrap;
+}
+.chip.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:600}
+
+/* ---------- 折りたたみ行 ---------- */
+.discl{
+  display:flex;align-items:center;justify-content:space-between;
+  min-height:48px;
+}
+.discl .label{font-size:17px;font-weight:600}
+.discl .right{display:flex;align-items:center;gap:8px;color:var(--text-secondary);font-size:15px}
+
+/* ---------- CTA ---------- */
+.cta-wrap{padding:8px var(--gutter) 0;margin-top:auto}
+.scope-cta{display:flex;align-items:center;justify-content:center;gap:6px;
+  padding:0 var(--gutter) 14px;font-size:13px;color:var(--text-secondary)}
+.cta{
+  display:grid;place-items:center;
+  height:56px;border-radius:16px;background:var(--accent);color:var(--on-accent);
+  font-size:17px;font-weight:700;letter-spacing:.04em;
+}
+.credit{
+  padding:14px var(--gutter) 6px;text-align:center;
+  font-size:11px;color:var(--text-tertiary);letter-spacing:.02em;
+}
+
+/* ---------- 結果画面 ---------- */
+.scope{
+  display:flex;align-items:center;gap:6px;
+  padding:14px var(--gutter) 0;
+  font-size:13px;color:var(--text-secondary);
+}
+.relax{
+  margin:10px var(--gutter) 0;padding:9px 12px;border-radius:10px;
+  background:var(--surface-subtle);border:1px solid var(--border);
+  font-size:12.5px;color:var(--text-secondary);
+  display:flex;align-items:center;gap:7px;
+}
+.photo{
+  margin:16px var(--gutter) 0;height:236px;border-radius:20px;overflow:hidden;background:var(--surface);
+}
+.photo img{width:100%;height:100%;object-fit:cover;display:block}
+.shopname{padding:20px var(--gutter) 0;font-size:26px;font-weight:700;letter-spacing:.01em}
+.shopurl{
+  display:flex;align-items:center;gap:9px;
+  padding:10px var(--gutter) 0;font-size:15px;color:var(--text-secondary);
+}
+.facts{margin:20px var(--gutter) 0;border-top:1px solid var(--border)}
+.fact{
+  display:flex;align-items:center;gap:14px;
+  min-height:56px;border-bottom:1px solid var(--border);
+}
+.fact .ico{
+  width:30px;height:30px;border-radius:50%;flex:0 0 auto;
+  display:grid;place-items:center;background:var(--surface-subtle);color:var(--text-secondary);
+}
+.fact .t{font-size:16px}
+.fact .tail{margin-left:auto;display:flex;align-items:center;gap:6px;color:var(--text-secondary);font-size:14px}
+
+.actions{display:flex;gap:14px;padding:22px var(--gutter) 0}
+.btn{
+  flex:1;height:56px;border-radius:16px;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  font-size:17px;font-weight:600;
+}
+.btn.ng{background:var(--surface);border:1px solid var(--border);color:var(--text-primary)}
+.btn.ok{background:var(--accent);color:var(--on-accent);font-weight:700}
+.textlink{
+  text-align:center;padding:18px 0 0;font-size:14px;color:var(--text-secondary);
+}
+.textlink span{border-bottom:1px solid rgba(255,255,255,.25);padding-bottom:2px}
+
+/* ---------- 候補なし ---------- */
+.empty{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:0 var(--gutter);text-align:center;gap:10px;
+}
+.empty .mark{
+  width:60px;height:60px;border-radius:50%;display:grid;place-items:center;
+  background:var(--surface);border:1px solid var(--border);color:var(--text-tertiary);
+  margin-bottom:6px;
+}
+.empty h2{font-size:19px;font-weight:600}
+.empty p{font-size:14px;color:var(--text-secondary);line-height:1.7}
+.relaxcta{
+  margin-top:22px;width:100%;height:56px;border-radius:16px;
+  display:grid;place-items:center;
+  border:1px solid var(--accent);color:var(--accent);
+  font-size:16px;font-weight:600;background:rgba(215,194,160,.06);
+}
+
+/* ---------- 履歴シート ---------- */
+.dim{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:8}
+.sheet{
+  position:absolute;left:0;right:0;bottom:0;z-index:9;
+  background:#1C1D20;border-radius:24px 24px 0 0;
+  padding-bottom:10px;
+  box-shadow:0 -20px 60px rgba(0,0,0,.5);
+}
+.grab{display:grid;place-items:center;padding:10px 0 6px}
+.grab i{display:block;width:40px;height:5px;border-radius:3px;background:rgba(255,255,255,.28)}
+.sheet h2{padding:10px var(--gutter) 16px;font-size:22px;font-weight:700}
+.hist{
+  display:flex;align-items:center;gap:12px;
+  padding:16px var(--gutter);
+  border-top:1px solid var(--border);
+}
+.hist .main{flex:1;min-width:0}
+.hist .n{font-size:17px;font-weight:600;margin-bottom:5px}
+.hist .m{font-size:13px;color:var(--text-secondary)}
+.hist .d{font-size:13px;color:var(--text-tertiary)}
+.sheet .clear{
+  text-align:center;padding:20px 0 8px;border-top:1px solid var(--border);
+  font-size:15px;color:var(--accent);font-weight:500;
+}
+.sheet .credit{padding:4px 0 14px}
+</style>
+</head>
+<body>
+
+<!-- ============ 1. トップ画面 ============ -->
+<div class="device" id="s1"><div class="screen">
+  <div class="island"></div>
+  <div class="statusbar">
+    <span>9:41</span>
+    <span class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+      <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><path d="M8.5 11.5 6.3 9.1a3.2 3.2 0 0 1 4.4 0L8.5 11.5Zm-4.3-4.6L2.1 4.7a9.2 9.2 0 0 1 12.8 0l-2.1 2.2a6.2 6.2 0 0 0-8.6 0Z"/></svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x=".5" y=".5" width="22" height="12" rx="3.5" stroke="currentColor" opacity=".45"/><rect x="2" y="2" width="19" height="9" rx="2" fill="currentColor"/><path d="M24 4.5v4a2.5 2.5 0 0 0 0-4Z" fill="currentColor" opacity=".45"/></svg>
+    </span>
+  </div>
+
+  <div class="header">
+    <span class="iconbtn"><svg width="24" height="24" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3.5 7h17M3.5 12h17M3.5 17h17"/></svg></span>
+    <span class="title">つぎどこ</span>
+    <span></span>
+  </div>
+
+  <div class="body">
+    <div class="section">
+      <div class="rowhead"><span class="label">予算</span><span class="value">4,000円以内</span></div>
+      <div class="slider">
+        <div class="track"></div>
+        <div class="dots"><span></span><span></span><span class="on"></span><span></span><span></span><span></span><span></span></div>
+      </div>
+      <div class="ticks ends"><b>2,000円以内</b><b>指定なし</b></div>
+    </div>
+
+    <div class="section">
+      <div class="rowhead"><span class="label">ジャンル</span></div>
+      <div class="chips">
+        <span class="chip">おまかせ</span>
+        <span class="chip on">居酒屋</span>
+        <span class="chip">ダイニングバー・バル</span>
+        <span class="chip">バー・カクテル</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="discl">
+        <span class="label">こだわり</span>
+        <span class="right">2件選択
+          <svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg>
+        </span>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="rowhead"><span class="label">距離</span><span class="value">1km</span></div>
+      <div class="slider">
+        <div class="track"></div>
+        <div class="dots"><span></span><span></span><span class="on"></span><span></span></div>
+      </div>
+      <div class="ticks"><span>300m</span><span>500m</span><b>1km</b><span>2km</span></div>
+    </div>
+
+    <div class="scope-cta" style="margin-top:auto"><svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" fill="none"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="2.6"/></svg>現在地から半径1km以内でさがします</div>
+    <div class="cta-wrap" style="margin-top:0"><div class="cta">さがす</div></div>
+    <div class="credit">Powered by ホットペッパーグルメ Webサービス</div>
+  </div>
+  <div class="homebar"><i></i></div>
+</div></div>
+
+<!-- ============ 2. 結果画面 ============ -->
+<div class="device" id="s2"><div class="screen">
+  <div class="island"></div>
+  <div class="statusbar">
+    <span>9:41</span>
+    <span class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+      <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><path d="M8.5 11.5 6.3 9.1a3.2 3.2 0 0 1 4.4 0L8.5 11.5Zm-4.3-4.6L2.1 4.7a9.2 9.2 0 0 1 12.8 0l-2.1 2.2a6.2 6.2 0 0 0-8.6 0Z"/></svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x=".5" y=".5" width="22" height="12" rx="3.5" stroke="currentColor" opacity=".45"/><rect x="2" y="2" width="19" height="9" rx="2" fill="currentColor"/><path d="M24 4.5v4a2.5 2.5 0 0 0 0-4Z" fill="currentColor" opacity=".45"/></svg>
+    </span>
+  </div>
+
+  <div class="header">
+    <span class="iconbtn"><svg width="24" height="24" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3.5 7h17M3.5 12h17M3.5 17h17"/></svg></span>
+    <span class="title">つぎどこ</span>
+    <span></span>
+  </div>
+
+  <div class="body">
+    <div class="scope">
+      <svg width="15" height="15" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" fill="none"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="2.6"/></svg>
+      現在地から半径1km以内
+    </div>
+
+    <div class="photo"><img src="shop.jpg" alt=""></div>
+
+    <div class="shopname">炭火焼き鳥 とり吉</div>
+    <div class="shopurl">
+      <svg width="17" height="17" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-8.5 8.5"/><path d="M18 14.5V19a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 19V8a1.5 1.5 0 0 1 1.5-1.5H10"/></svg>
+      hotpepper.jp/…
+    </div>
+
+    <div class="facts">
+      <div class="fact">
+        <span class="ico"><svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" fill="none"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="2.6"/></svg></span>
+        <span class="t">徒歩 約4分</span>
+      </div>
+      <div class="fact">
+        <span class="ico"><svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9" fill="none" stroke-linecap="round"><path d="M5 4.5 12 13m7-8.5L12 13m0 0v6.5M7.5 14.5h9M7.5 17.5h9"/></svg></span>
+        <span class="t">3,001〜4,000円</span>
+      </div>
+      <div class="fact">
+        <span class="ico"><svg width="15" height="15" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 16.9v2.6a1.8 1.8 0 0 1-2 1.8 17.6 17.6 0 0 1-7.7-2.7 17.3 17.3 0 0 1-5.3-5.3A17.6 17.6 0 0 1 3.8 5.5a1.8 1.8 0 0 1 1.8-2h2.6a1.8 1.8 0 0 1 1.8 1.5c.1.9.3 1.7.6 2.5a1.8 1.8 0 0 1-.4 1.9l-1.1 1.1a14 14 0 0 0 5.3 5.3l1.1-1.1a1.8 1.8 0 0 1 1.9-.4c.8.3 1.6.5 2.5.6a1.8 1.8 0 0 1 1.6 1.9Z"/></svg></span>
+        <span class="t">連絡先</span>
+        <span class="tail">店舗詳細で確認
+          <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg>
+        </span>
+      </div>
+    </div>
+
+    <div class="actions">
+      <div class="btn ng">
+        <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        NG
+      </div>
+      <div class="btn ok">
+        <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 12.5 5 5 10-11"/></svg>
+        OK
+      </div>
+    </div>
+
+    <div class="textlink"><span>条件を変更</span></div>
+    <div class="credit" style="margin-top:auto">Powered by ホットペッパーグルメ Webサービス</div>
+  </div>
+  <div class="homebar"><i></i></div>
+</div></div>
+
+<!-- ============ 3. 候補なし ============ -->
+<div class="device" id="s3"><div class="screen">
+  <div class="island"></div>
+  <div class="statusbar">
+    <span>9:41</span>
+    <span class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+      <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><path d="M8.5 11.5 6.3 9.1a3.2 3.2 0 0 1 4.4 0L8.5 11.5Zm-4.3-4.6L2.1 4.7a9.2 9.2 0 0 1 12.8 0l-2.1 2.2a6.2 6.2 0 0 0-8.6 0Z"/></svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x=".5" y=".5" width="22" height="12" rx="3.5" stroke="currentColor" opacity=".45"/><rect x="2" y="2" width="19" height="9" rx="2" fill="currentColor"/><path d="M24 4.5v4a2.5 2.5 0 0 0 0-4Z" fill="currentColor" opacity=".45"/></svg>
+    </span>
+  </div>
+
+  <div class="header">
+    <span class="iconbtn"><svg width="24" height="24" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3.5 7h17M3.5 12h17M3.5 17h17"/></svg></span>
+    <span class="title">つぎどこ</span>
+    <span></span>
+  </div>
+
+  <div class="body">
+    <div class="scope">
+      <svg width="15" height="15" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" fill="none"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="2.6"/></svg>
+      現在地から半径1km以内
+    </div>
+
+    <div class="empty">
+      <span class="mark">
+        <svg width="28" height="28" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4M8.5 11h5"/></svg>
+      </span>
+      <h2>候補が見つかりませんでした</h2>
+      <p>条件を少しゆるめると<br>見つかるかもしれません</p>
+      <div class="relaxcta">こだわり条件を外してさがす</div>
+    </div>
+
+    <div class="textlink" style="padding-bottom:4px"><span>条件を変更</span></div>
+    <div class="credit">Powered by ホットペッパーグルメ Webサービス</div>
+  </div>
+  <div class="homebar"><i></i></div>
+</div></div>
+
+<!-- ============ 4. 履歴シート ============ -->
+<div class="device" id="s4"><div class="screen">
+  <div class="island"></div>
+  <div class="statusbar">
+    <span>9:41</span>
+    <span class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+      <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><path d="M8.5 11.5 6.3 9.1a3.2 3.2 0 0 1 4.4 0L8.5 11.5Zm-4.3-4.6L2.1 4.7a9.2 9.2 0 0 1 12.8 0l-2.1 2.2a6.2 6.2 0 0 0-8.6 0Z"/></svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x=".5" y=".5" width="22" height="12" rx="3.5" stroke="currentColor" opacity=".45"/><rect x="2" y="2" width="19" height="9" rx="2" fill="currentColor"/><path d="M24 4.5v4a2.5 2.5 0 0 0 0-4Z" fill="currentColor" opacity=".45"/></svg>
+    </span>
+  </div>
+
+  <div class="header">
+    <span class="iconbtn"><svg width="24" height="24" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3.5 7h17M3.5 12h17M3.5 17h17"/></svg></span>
+    <span class="title">つぎどこ</span>
+    <span></span>
+  </div>
+
+  <div class="body">
+    <div class="section">
+      <div class="rowhead"><span class="label">予算</span><span class="value">4,000円以内</span></div>
+      <div class="slider">
+        <div class="track"></div>
+        <div class="dots"><span></span><span></span><span class="on"></span><span></span><span></span><span></span><span></span></div>
+      </div>
+      <div class="ticks ends"><b>2,000円以内</b><b>指定なし</b></div>
+    </div>
+    <div class="section">
+      <div class="rowhead"><span class="label">ジャンル</span></div>
+      <div class="chips">
+        <span class="chip">おまかせ</span>
+        <span class="chip on">居酒屋</span>
+        <span class="chip">ダイニングバー・バル</span>
+        <span class="chip">バー・カクテル</span>
+      </div>
+    </div>
+    <div class="section">
+      <div class="discl">
+        <span class="label">こだわり</span>
+        <span class="right">2件選択
+          <svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="dim"></div>
+  <div class="sheet">
+    <div class="grab"><i></i></div>
+    <h2>履歴</h2>
+    <div class="hist">
+      <span class="main">
+        <span class="n" style="display:block">炭火焼き鳥 とり吉</span>
+        <span class="m">徒歩 約4分 ・ 3,001〜4,000円</span>
+      </span>
+      <span class="d">9/18</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" stroke="rgba(255,255,255,.38)" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg>
+    </div>
+    <div class="hist">
+      <span class="main">
+        <span class="n" style="display:block">BAR K</span>
+        <span class="m">徒歩 約6分 ・ 4,001〜5,000円</span>
+      </span>
+      <span class="d">9/12</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" stroke="rgba(255,255,255,.38)" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg>
+    </div>
+    <div class="hist">
+      <span class="main">
+        <span class="n" style="display:block">和バル つむぎ</span>
+        <span class="m">徒歩 約3分 ・ 3,001〜4,000円</span>
+      </span>
+      <span class="d">9/05</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" stroke="rgba(255,255,255,.38)" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg>
+    </div>
+    <div class="clear">履歴を消去</div>
+    <div class="credit">Powered by ホットペッパーグルメ Webサービス</div>
+  </div>
+
+  <div class="homebar"><i></i></div>
+</div></div>
+
+</body>
+</html>
