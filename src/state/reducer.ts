@@ -31,6 +31,8 @@ export interface AppState {
   prefetching: boolean;
   noCandidate: boolean;
   error: ErrorKind | null;
+  /** セッションの開始時刻。TTL判定の基準。復元時は保存された値を引き継ぐ */
+  startedAt: number | null;
 }
 
 export const initialState: AppState = {
@@ -48,6 +50,7 @@ export const initialState: AppState = {
   prefetching: false,
   noCandidate: false,
   error: null,
+  startedAt: null,
 };
 
 export type Action =
@@ -55,7 +58,7 @@ export type Action =
   | { type: 'setCondition'; condition: SearchCondition }
   | { type: 'locating' }
   | { type: 'locationAcquired'; location: GeoPoint }
-  | { type: 'searchStarted'; relaxLevel: RelaxLevel }
+  | { type: 'searchStarted'; relaxLevel: RelaxLevel; startedAt: number }
   | { type: 'searchSucceeded'; shops: Shop[]; nextStart: number; hasMore: boolean }
   | { type: 'ng' }
   | { type: 'prefetchStarted' }
@@ -107,6 +110,8 @@ export function reducer(state: AppState, action: Action): AppState {
         shownIds: session.shownIds,
         nextStart: session.nextStart,
         hasMore: session.hasMore,
+        // 復元では開始時刻を引き継ぐ。ここで現在時刻にするとTTLが無限に延びる
+        startedAt: session.startedAt,
       };
     }
 
@@ -124,6 +129,7 @@ export function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         relaxLevel: action.relaxLevel,
+        startedAt: action.startedAt,
         loading: true,
         error: null,
         noCandidate: false,
@@ -235,7 +241,7 @@ export function reducer(state: AppState, action: Action): AppState {
 }
 
 /** 現在の状態から保存するセッションを作る（DATA-001 §7）。現在地は含めない。 */
-export function toSession(state: AppState, startedAt: number): SearchSession {
+export function toSession(state: AppState, startedAt = state.startedAt ?? 0): SearchSession {
   return {
     condition: state.condition,
     relaxLevel: state.relaxLevel,

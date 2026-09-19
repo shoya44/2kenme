@@ -29,7 +29,7 @@ const run = (state: AppState, ...actions: Action[]) => actions.reduce(reducer, s
 const searched = (count = 20, hasMore = true) =>
   run(
     initialState,
-    { type: 'searchStarted', relaxLevel: 0 },
+    { type: 'searchStarted', relaxLevel: 0, startedAt: 1 },
     {
       type: 'searchSucceeded',
       shops: shops(count),
@@ -52,7 +52,7 @@ describe('検索', () => {
   it('0件なら候補なしになる', () => {
     const state = run(
       initialState,
-      { type: 'searchStarted', relaxLevel: 0 },
+      { type: 'searchStarted', relaxLevel: 0, startedAt: 1 },
       {
         type: 'searchSucceeded',
         shops: [],
@@ -67,7 +67,7 @@ describe('検索', () => {
   });
 
   it('検索開始で前回の状態を捨てる', () => {
-    const state = run(searched(), { type: 'searchStarted', relaxLevel: 2 });
+    const state = run(searched(), { type: 'searchStarted', relaxLevel: 2, startedAt: 2 });
 
     expect(state.currentShop).toBeNull();
     expect(state.queue).toEqual([]);
@@ -317,5 +317,31 @@ describe('エラーと画面遷移', () => {
     const state = run(initialState, { type: 'setCondition', condition }, { type: 'backToSearch' });
 
     expect(state.condition.budgetMax).toBe(7000);
+  });
+});
+
+describe('セッションのTTL基準', () => {
+  it('検索開始で開始時刻を記録する', () => {
+    const state = reducer(initialState, {
+      type: 'searchStarted',
+      relaxLevel: 0,
+      startedAt: 12_345,
+    });
+
+    expect(state.startedAt).toBe(12_345);
+  });
+
+  it('復元では保存された開始時刻を引き継ぐ（TTLが延びない）', () => {
+    const source = { ...searched(), startedAt: 1_000 };
+    const session = toSession(source);
+
+    const restored = reducer(initialState, {
+      type: 'restore',
+      condition: initialState.condition,
+      session,
+    });
+
+    expect(session.startedAt).toBe(1_000);
+    expect(restored.startedAt).toBe(1_000);
   });
 });
