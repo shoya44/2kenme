@@ -17,7 +17,13 @@
 | [05_データ設計書](docs/05_データ設計書.md) | DATA-001 | Web Storage・永続データ・プライバシー |
 | [06_テスト・CI設計書](docs/06_テスト・CI設計書.md) | TEST-001 | テスト観点・CI/CD・手動確認項目 |
 
-`docs/*.png` は版1.0時点のモックで、現行仕様と差分がある（FE-001 §30 参照）。
+## モック
+
+| [トップ](docs/mock/01_トップ画面.png) | [結果](docs/mock/02_結果画面.png) | [候補なし](docs/mock/03_候補なし.png) | [履歴](docs/mock/04_履歴シート.png) |
+|---|---|---|---|
+| <img src="docs/mock/01_トップ画面.png" width="180"> | <img src="docs/mock/02_結果画面.png" width="180"> | <img src="docs/mock/03_候補なし.png" width="180"> | <img src="docs/mock/04_履歴シート.png" width="180"> |
+
+生成元は [`docs/mock/mock.html`](docs/mock/mock.html)。`node docs/mock/shot.mjs` で再生成できる（[手順](docs/mock/README.md)）。
 
 ## ステータス
 
