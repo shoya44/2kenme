@@ -1,12 +1,12 @@
 /**
  * Secret のバインディング型。
  *
- * wrangler.jsonc の vars は `wrangler types` が worker-configuration.d.ts へ生成するが、
- * Secret は設定ファイルに現れないためここで宣言し、生成された Cloudflare.Env へマージする。
+ * wrangler.jsonc の vars は `wrangler types` が worker-configuration.d.ts へ
+ * グローバルの `Env` として生成するが、Secret は設定ファイルに現れない。
+ * ここで宣言マージして補う（BE-001 §20）。
  */
-declare namespace Cloudflare {
-  interface Env {
-    /** HotPepper APIキー（BE-001 §20） */
-    HOTPEPPER_API_KEY: string;
-  }
+
+interface Env {
+  /** HotPepper APIキー */
+  HOTPEPPER_API_KEY: string;
 }

@@ -1,10 +1,39 @@
-import { HttpError } from './http';
+import { json } from './http';
+import {
+  assertHotPepperSuccess,
+  buildHotPepperParams,
+  fetchHotPepper,
+  UpstreamError,
+} from './hotpepper';
+import { mapPaging, mapShop } from './mapper';
+import { validateSearchRequest } from './validation';
+import type { SearchResponse, Shop } from '../shared/api-types';
 
-/**
- * POST /api/search のユースケース。
- *
- * 入力検証・予算コード変換・HotPepper呼出・整形はPR2で実装する（BE-001 §1）。
- */
-export async function handleSearch(_request: Request, _env: Env): Promise<Response> {
-  throw new HttpError(501, 'not implemented');
+/** POST /api/search のユースケース（BE-001 §1）。 */
+export async function handleSearch(request: Request, env: Env): Promise<Response> {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: 'invalid body' }, 400);
+  }
+
+  const searchRequest = validateSearchRequest(body);
+
+  const params = buildHotPepperParams(searchRequest, env.HOTPEPPER_API_KEY);
+  const upstream = await fetchHotPepper(params);
+  assertHotPepperSuccess(upstream);
+
+  const shops: Shop[] = [];
+  for (const raw of upstream.results?.shop ?? []) {
+    const shop = mapShop(raw, searchRequest.lat, searchRequest.lng);
+    if (shop) {
+      shops.push(shop);
+    }
+  }
+
+  // HotPepperの返却順（おすすめ順）を保持する。シャッフルはF/Eが行う
+  return json({ shops, paging: mapPaging(upstream) } satisfies SearchResponse);
 }
+
+export { UpstreamError };

@@ -17,6 +17,7 @@
     "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.worker.json --noEmit && tsc -p tsconfig.node.json --noEmit",
     "test": "vitest run",
     "test:worker": "vitest run -c vitest.worker.config.ts",
+    "gen:budget": "tsx scripts/gen-budget-master.ts",
     "deploy": "wrangler deploy",
     "cf-typegen": "wrangler types"
   },
