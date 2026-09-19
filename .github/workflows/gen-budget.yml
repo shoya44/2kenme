@@ -11,6 +11,8 @@ on:
 
 permissions:
   contents: write
+  # push後に Deploy を起動するため
+  actions: write
 
 concurrency:
   group: gen-budget
@@ -54,6 +56,7 @@ jobs:
       - run: npm run test:worker
 
       - name: 差分があればコミットする
+        id: commit
         run: |
           if git diff --quiet -- worker/budget-master.generated.ts; then
             echo "### 変更はありませんでした" >> "$GITHUB_STEP_SUMMARY"
@@ -75,3 +78,16 @@ jobs:
             git show --stat --oneline HEAD | head -5
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      # ワークフローが GITHUB_TOKEN で行った push では他のワークフローが
+      # 起動しない（無限ループ防止）。Deploy は明示的に呼ぶ必要がある。
+      # workflow_dispatch はこの制限の例外なので起動できる
+      - name: Deploy を起動する
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run deploy.yml --ref main
+          echo "Deploy を起動しました" >> "$GITHUB_STEP_SUMMARY"

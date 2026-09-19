@@ -70,8 +70,8 @@ Actions タブ → 左の「予算マスタを生成」 → Run workflow → Run
 
 **4. デプロイする**
 
-手順3のコミットで Deploy が自動的に走ります。走らなければ
-Actions タブ → 「Deploy」 → Run workflow から手動実行してください。
+手順3が予算マスタを更新すると、続けて Deploy が自動的に走ります。
+走らない場合は Actions タブ → 「Deploy」 → Run workflow から手動実行してください。
 
 完了すると Cloudflare の Workers & Pages に `tsugidoko` が現れ、
 `https://tsugidoko.<サブドメイン>.workers.dev` で開けます。
