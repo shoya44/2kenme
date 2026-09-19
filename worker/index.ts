@@ -71,8 +71,13 @@ async function route(request: Request, env: WorkerEnv, pathname: string): Promis
  * CORSヘッダは返さない。
  */
 export function assertAllowedOrigin(request: Request, env: WorkerEnv): void {
+  // 静的アセットとAPIは同じWorkerが配信するため、許可すべきOriginは
+  // Worker自身のオリジン。未設定ならそれを使い、本番での設定を不要にする。
+  // 設定漏れで全リクエストが403になる事故も防げる
+  const allowed = env.ALLOWED_ORIGIN || new URL(request.url).origin;
+
   const origin = request.headers.get('Origin');
-  if (origin === null || origin !== env.ALLOWED_ORIGIN) {
+  if (origin === null || origin !== allowed) {
     throw new HttpError(403, 'forbidden');
   }
 }

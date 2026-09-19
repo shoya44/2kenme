@@ -76,6 +76,41 @@ describe('Origin検証', () => {
     expect(stub.calls).toHaveLength(0);
   });
 
+  it('ALLOWED_ORIGIN 未設定なら Worker 自身のオリジンを許可する', async () => {
+    stubFetch(hotpepperBody([shop()]));
+    const withoutOrigin: WorkerEnv = { HOTPEPPER_API_KEY: env.HOTPEPPER_API_KEY };
+
+    // リクエストURLのオリジンと同じ Origin ヘッダ
+    const res = await worker.fetch(searchRequest(), withoutOrigin);
+
+    expect(res.status).toBe(200);
+  });
+
+  it('ALLOWED_ORIGIN 未設定でも、別オリジンからは403', async () => {
+    const stub = stubFetch(hotpepperBody([shop()]));
+    const withoutOrigin: WorkerEnv = { HOTPEPPER_API_KEY: env.HOTPEPPER_API_KEY };
+
+    const res = await worker.fetch(
+      searchRequest(validRequest, { origin: 'https://evil.example.com' }),
+      withoutOrigin,
+    );
+
+    expect(res.status).toBe(403);
+    expect(stub.calls).toHaveLength(0);
+  });
+
+  it('ALLOWED_ORIGIN が設定されていればそちらを優先する', async () => {
+    stubFetch(hotpepperBody([shop()]));
+
+    // 開発時にF/Eを別ポートで動かす場合
+    const res = await worker.fetch(
+      searchRequest(validRequest, { origin: 'http://localhost:5173' }),
+      { ...env, ALLOWED_ORIGIN: 'http://localhost:5173' },
+    );
+
+    expect(res.status).toBe(200);
+  });
+
   it('CORSヘッダを返さない', async () => {
     stubFetch(hotpepperBody([shop()]));
 

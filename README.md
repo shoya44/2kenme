@@ -41,31 +41,47 @@ MVPの実装が一通り完了。デプロイは未実施。
 
 テスト257件（Worker 145 / F/E 112）。
 
-### 着手前に必要なこと
+### デプロイ手順（iPhoneだけで完結します）
 
-1. **HotPepper APIキーを取得し、予算マスタを生成する**
+ターミナルは不要です。GitHubとCloudflareのWeb画面だけで進められます。
 
-   `worker/budget-master.generated.ts` には暫定データが入っている。
-   生成環境からHotPepper APIへ到達できず、公開情報から起こした値のため、
-   必ず実データへ差し替える。
+**1. Cloudflareで APIトークンとアカウントIDを取る**
 
-   ```bash
-   HOTPEPPER_API_KEY=xxxx npm run gen:budget
-   ```
+- [dash.cloudflare.com](https://dash.cloudflare.com/) → 右上メニュー → My Profile → API Tokens
+- Create Token → テンプレート **Edit Cloudflare Workers** → Continue → Create
+- 表示されたトークンをコピー（**この画面を離れると二度と見られません**）
+- Workers & Pages の画面に出ている **Account ID** もコピー
 
-2. **Cloudflareへの登録**
+**2. GitHubにSecretを3つ登録する**
 
-   ```bash
-   npx wrangler secret put HOTPEPPER_API_KEY
-   ```
+リポジトリ → Settings → Secrets and variables → Actions → New repository secret
 
-   `ALLOWED_ORIGIN` を本番のオリジンに合わせて `wrangler.jsonc` で更新する。
-   GitHub Secrets に `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` を登録する。
+| 名前 | 値 |
+|---|---|
+| `CLOUDFLARE_API_TOKEN` | 手順1のトークン |
+| `CLOUDFLARE_ACCOUNT_ID` | 手順1のアカウントID |
+| `HOTPEPPER_API_KEY` | ホットペッパーのAPIキー |
 
-3. **実機での確認**
+**3. 予算マスタを実データにする**
 
-   TEST-001 §8 の手動確認項目を実施する。とくにiOSのPWAでの
-   ポップアップ挙動とセッション復帰は自動テストで担保していない。
+Actions タブ → 左の「予算マスタを生成」 → Run workflow → Run workflow
+
+暫定データが実データへ置き換わり、`main` へ自動でコミットされます。
+
+**4. デプロイする**
+
+手順3のコミットで Deploy が自動的に走ります。走らなければ
+Actions タブ → 「Deploy」 → Run workflow から手動実行してください。
+
+完了すると Cloudflare の Workers & Pages に `tsugidoko` が現れ、
+`https://tsugidoko.<サブドメイン>.workers.dev` で開けます。
+
+`HOTPEPPER_API_KEY` はデプロイ時に Worker の Secret へ自動で反映されます。
+`ALLOWED_ORIGIN` の設定は不要です（未設定ならWorker自身のオリジンを許可します）。
+
+**5. 実機で確認する**
+
+デプロイ先のURLをiPhoneで開き、[TEST-001 §8](docs/06_テスト・CI設計書.md) の手動確認項目を上から順に確認します。
 
 ## 技術スタック
 
