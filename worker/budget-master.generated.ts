@@ -2,11 +2,6 @@
  * HotPepper 検索用ディナー予算マスタ。
  *
  * 【生成物】手で編集しない。`npm run gen:budget` で再生成する。
- *
- * ⚠️ 暫定データ（要検証）
- * 生成時にHotPepper APIへ到達できない環境だったため、公開情報から起こした暫定値が入っている。
- * APIキーを用意して `npm run gen:budget` を実行し、この内容を必ず差し替えること。
- * 差し替えるまで、予算上限による絞り込みが実データとずれる可能性がある。
  */
 
 export interface BudgetMasterEntry {
@@ -26,9 +21,13 @@ export const BUDGET_MASTER: readonly BudgetMasterEntry[] = [
   { code: 'B002', name: '2001～3000円', min: 2001, max: 3000 },
   { code: 'B003', name: '3001～4000円', min: 3001, max: 4000 },
   { code: 'B008', name: '4001～5000円', min: 4001, max: 5000 },
-  { code: 'B004', name: '5001～7000円', min: 5001, max: 7000 },
-  { code: 'B005', name: '7001～10000円', min: 7001, max: 10000 },
-  { code: 'B006', name: '10001～15000円', min: 10001, max: 15000 },
+  { code: 'B015', name: '5001～6000円', min: 5001, max: 6000 },
+  { code: 'B016', name: '6001～7000円', min: 6001, max: 7000 },
+  { code: 'B017', name: '7001～8000円', min: 7001, max: 8000 },
+  { code: 'B018', name: '8001～9000円', min: 8001, max: 9000 },
+  { code: 'B019', name: '9001～10000円', min: 9001, max: 10000 },
+  { code: 'B020', name: '10001～12000円', min: 10001, max: 12000 },
+  { code: 'B021', name: '12001～15000円', min: 12001, max: 15000 },
   { code: 'B012', name: '15001～20000円', min: 15001, max: 20000 },
   { code: 'B013', name: '20001～30000円', min: 20001, max: 30000 },
   { code: 'B014', name: '30001円～', min: 30001, max: null },
