@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useReducer, useState } from 'react';
 
+import { AboutSheet } from './components/AboutSheet';
 import { Header } from './components/Header';
 import { HistorySheet } from './components/HistorySheet';
 import { MenuSheet } from './components/MenuSheet';
@@ -24,7 +25,7 @@ import { initialState, reducer, shouldPrefetch, toSession, type AppState } from 
 import { applyRelax, nextRelaxLevel, RELAX_LABELS, type RelaxLevel } from './utils/relax';
 import type { HistoryEntry, SearchCondition } from './types';
 
-type OpenSheet = 'none' | 'menu' | 'history';
+type OpenSheet = 'none' | 'menu' | 'history' | 'about';
 
 export function App() {
   // 起動時に前回条件とセッションを復元する。effect ではなく遅延初期化で行う
@@ -78,11 +79,11 @@ export function App() {
 
   // 候補が少なくなったら次ページを先読みする
   useEffect(() => {
-    if (state.screen !== 'result' || !shouldPrefetch(state) || !state.location) {
+    if (state.screen !== 'result' || !shouldPrefetch(state)) {
       return;
     }
 
-    const location = state.location;
+    const cached = state.location;
     const condition = applyRelax(state.condition, state.relaxLevel);
     const start = state.nextStart;
     const startedAt = state.startedAt ?? 0;
@@ -91,8 +92,22 @@ export function App() {
 
     // 再レンダリングでは中断しない。中断すると prefetching が立ったまま
     // 戻らず、以降の先読みが止まる。古い応答は startedAt で捨てる
-    void fetchShops(condition, location, start)
-      .then((response) => {
+    void (async () => {
+      let location = cached;
+      if (!location) {
+        // セッション復帰直後は現在地を持っていない。ここで取り直す（FE-001 §23）
+        try {
+          location = await getCurrentLocation();
+          dispatch({ type: 'locationAcquired', location });
+        } catch {
+          dispatch({ type: 'prefetchFailed', startedAt });
+          dispatch({ type: 'failed', kind: 'location' });
+          return;
+        }
+      }
+
+      try {
+        const response = await fetchShops(condition, location, start);
         dispatch({
           type: 'prefetchSucceeded',
           shops: response.shops,
@@ -100,10 +115,10 @@ export function App() {
           hasMore: response.paging.hasMore,
           startedAt,
         });
-      })
-      .catch(() => {
+      } catch {
         dispatch({ type: 'prefetchFailed', startedAt });
-      });
+      }
+    })();
   }, [state]);
 
   const handleSearch = useCallback(() => {
@@ -176,9 +191,11 @@ export function App() {
             setHistory([]);
             setSheet('none');
           }}
-          onAbout={() => setSheet('none')}
+          onAbout={() => setSheet('about')}
         />
       )}
+
+      {sheet === 'about' && <AboutSheet onClose={() => setSheet('none')} />}
 
       {sheet === 'history' && (
         <HistorySheet

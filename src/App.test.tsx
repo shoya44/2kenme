@@ -392,3 +392,84 @@ describe('復元', () => {
     );
   });
 });
+
+/** セッション復帰（DATA-001 §2 / FE-001 §23）。 */
+describe('セッション復帰', () => {
+  /** 現在地を持たない復帰直後の状態を作る。 */
+  function seedSession(shops: Shop[], hasMore: boolean) {
+    localStorage.setItem(
+      'tsugidoko:session',
+      JSON.stringify({
+        condition: {
+          budgetMax: 4000,
+          genreCode: null,
+          preferences: { privateRoom: false, freeDrink: false, midnight: false },
+          range: 3,
+        },
+        relaxLevel: 0,
+        currentShop: shops[0],
+        queue: shops.slice(1),
+        shownIds: [],
+        nextStart: 51,
+        hasMore,
+        startedAt: Date.now(),
+      }),
+    );
+  }
+
+  it('結果画面から再開する', () => {
+    seedSession([shop('a'), shop('b')], false);
+
+    render(<App />);
+
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('店 a');
+  });
+
+  it('復帰後の追加取得で現在地を取り直す', async () => {
+    const user = userEvent.setup();
+    // 現在地はsessionStorageに無い状態で復帰する
+    seedSession([shop('a')], true);
+    const getCurrentPosition = allowGeolocation();
+    const fetchMock = stubSearch(response([shop('b'), shop('c')], false));
+    render(<App />);
+
+    // queueが空になり先読みが必要になる
+    await user.click(screen.getByRole('button', { name: /NG/ }));
+
+    await waitFor(() => expect(getCurrentPosition).toHaveBeenCalled());
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(/店 [bc]/),
+    );
+  });
+
+  it('復帰後に現在地を取得できなければエラーを出す（無限ローディングにしない）', async () => {
+    const user = userEvent.setup();
+    seedSession([shop('a')], true);
+    denyGeolocation();
+    stubSearch(response([shop('b')], false));
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /NG/ }));
+
+    await waitFor(() =>
+      expect(screen.getByText('現在地を取得できませんでした')).toBeInTheDocument(),
+    );
+  });
+});
+
+/** このアプリについて（FE-001 §5 メニュー）。 */
+describe('このアプリについて', () => {
+  it('メニューから開ける', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: 'メニュー' }));
+    await user.click(screen.getByRole('button', { name: 'このアプリについて' }));
+
+    const dialog = screen.getByRole('dialog', { name: 'このアプリについて' });
+
+    expect(within(dialog).getByText('2軒目を、1軒だけ。')).toBeInTheDocument();
+    expect(within(dialog).getByText(/ホットペッパーグルメ Webサービス/)).toBeInTheDocument();
+  });
+});

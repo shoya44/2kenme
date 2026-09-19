@@ -574,3 +574,34 @@
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+/* ---- このアプリについて ---- */
+.about {
+  padding: 0 var(--gutter) 24px;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--text-secondary);
+}
+
+.about p + p {
+  margin-top: 16px;
+}
+
+.aboutLead {
+  font-size: 17px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.aboutLink {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.aboutNote {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
