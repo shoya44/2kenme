@@ -251,6 +251,8 @@
 
 .credit a {
   color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 /* ---- 結果画面 ---- */
@@ -296,6 +298,7 @@
 }
 
 .shopUrl {
+  color: var(--text-secondary);
   display: inline-flex;
   align-items: center;
   gap: 9px;

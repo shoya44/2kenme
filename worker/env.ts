@@ -10,4 +10,9 @@ export interface WorkerEnv {
   HOTPEPPER_API_KEY: string;
   /** /api/search を許可するOrigin */
   ALLOWED_ORIGIN: string;
+  /**
+   * HotPepperのエンドポイントを差し替える（開発時のみ）。
+   * 未設定なら本番のエンドポイントを使う。
+   */
+  HOTPEPPER_ENDPOINT?: string;
 }

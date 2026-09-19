@@ -352,3 +352,25 @@ describe('ログ', () => {
     expect(JSON.stringify(logs)).toContain('"upstreamErrorCode":2000');
   });
 });
+
+/** 開発時のエンドポイント差し替え（BE-001 §20）。 */
+describe('HOTPEPPER_ENDPOINT', () => {
+  it('未設定なら本番のエンドポイントを叩く', async () => {
+    const stub = stubFetch(hotpepperBody([]));
+
+    await call(searchRequest());
+
+    expect(stub.calls[0]).toContain('https://webservice.recruit.co.jp/hotpepper/gourmet/v1/');
+  });
+
+  it('設定されていれば差し替わる', async () => {
+    const stub = stubFetch(hotpepperBody([]));
+
+    await worker.fetch(searchRequest(), {
+      ...env,
+      HOTPEPPER_ENDPOINT: 'http://127.0.0.1:8899/',
+    });
+
+    expect(stub.calls[0]).toContain('http://127.0.0.1:8899/');
+  });
+});

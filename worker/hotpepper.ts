@@ -2,7 +2,15 @@ import { toBudgetCodes } from './budget';
 import { HttpError } from './http';
 import type { SearchRequest } from '../shared/api-types';
 
-const ENDPOINT = 'https://webservice.recruit.co.jp/hotpepper/gourmet/v1/';
+const DEFAULT_ENDPOINT = 'https://webservice.recruit.co.jp/hotpepper/gourmet/v1/';
+
+/**
+ * 実APIへ到達できない環境で通し確認をするための差し替え口。
+ * wrangler.jsonc の vars には置かず、ローカルの .dev.vars からのみ与える。
+ */
+function endpoint(override?: string): string {
+  return override && override.length > 0 ? override : DEFAULT_ENDPOINT;
+}
 
 /** 1回の検索で取得する件数（REQ-001 §8）。 */
 export const COUNT_PER_PAGE = 50;
@@ -74,10 +82,13 @@ export function buildHotPepperParams(request: SearchRequest, apiKey: string): UR
 }
 
 /** HotPepperを呼ぶ。通信失敗は502、タイムアウトは504。 */
-export async function fetchHotPepper(params: URLSearchParams): Promise<HotPepperResponse> {
+export async function fetchHotPepper(
+  params: URLSearchParams,
+  endpointOverride?: string,
+): Promise<HotPepperResponse> {
   let response: Response;
   try {
-    response = await fetch(`${ENDPOINT}?${params.toString()}`, {
+    response = await fetch(`${endpoint(endpointOverride)}?${params.toString()}`, {
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
   } catch (error) {

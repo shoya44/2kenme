@@ -22,7 +22,7 @@ export async function handleSearch(request: Request, env: WorkerEnv): Promise<Re
   const searchRequest = validateSearchRequest(body);
 
   const params = buildHotPepperParams(searchRequest, env.HOTPEPPER_API_KEY);
-  const upstream = await fetchHotPepper(params);
+  const upstream = await fetchHotPepper(params, env.HOTPEPPER_ENDPOINT);
   assertHotPepperSuccess(upstream);
 
   const shops: Shop[] = [];
