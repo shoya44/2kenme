@@ -43,7 +43,8 @@ export function App() {
 
   const runSearch = useCallback(
     async (condition: SearchCondition, relaxLevel: RelaxLevel) => {
-      dispatch({ type: 'searchStarted', relaxLevel, startedAt: Date.now() });
+      const startedAt = Date.now();
+      dispatch({ type: 'searchStarted', relaxLevel, startedAt });
       saveDefaults(condition);
       clearSession();
 
@@ -66,6 +67,7 @@ export function App() {
           shops: response.shops,
           nextStart: response.paging.nextStart,
           hasMore: response.paging.hasMore,
+          startedAt,
         });
       } catch {
         dispatch({ type: 'failed', kind: 'network' });
@@ -83,31 +85,25 @@ export function App() {
     const location = state.location;
     const condition = applyRelax(state.condition, state.relaxLevel);
     const start = state.nextStart;
+    const startedAt = state.startedAt ?? 0;
 
     dispatch({ type: 'prefetchStarted' });
 
-    let cancelled = false;
+    // 再レンダリングでは中断しない。中断すると prefetching が立ったまま
+    // 戻らず、以降の先読みが止まる。古い応答は startedAt で捨てる
     void fetchShops(condition, location, start)
       .then((response) => {
-        if (cancelled) {
-          return;
-        }
         dispatch({
           type: 'prefetchSucceeded',
           shops: response.shops,
           nextStart: response.paging.nextStart,
           hasMore: response.paging.hasMore,
+          startedAt,
         });
       })
       .catch(() => {
-        if (!cancelled) {
-          dispatch({ type: 'prefetchFailed' });
-        }
+        dispatch({ type: 'prefetchFailed', startedAt });
       });
-
-    return () => {
-      cancelled = true;
-    };
   }, [state]);
 
   const handleSearch = useCallback(() => {

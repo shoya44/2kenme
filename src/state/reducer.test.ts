@@ -35,6 +35,7 @@ const searched = (count = 20, hasMore = true) =>
       shops: shops(count),
       nextStart: 51,
       hasMore,
+      startedAt: 1,
     },
   );
 
@@ -58,6 +59,7 @@ describe('検索', () => {
         shops: [],
         nextStart: 1,
         hasMore: false,
+        startedAt: 1,
       },
     );
 
@@ -176,6 +178,7 @@ describe('先読み', () => {
       shops: shops(5, 't'),
       nextStart: 101,
       hasMore: true,
+      startedAt: 1,
     });
 
     expect(after.queue).toHaveLength(before.queue.length + 5);
@@ -193,6 +196,7 @@ describe('先読み', () => {
       shops: shops(3, 't'),
       nextStart: 101,
       hasMore: false,
+      startedAt: 1,
     });
 
     expect(after.currentShop).not.toBeNull();
@@ -210,6 +214,7 @@ describe('先読み', () => {
       shops: [],
       nextStart: 101,
       hasMore: false,
+      startedAt: 1,
     });
 
     expect(after.noCandidate).toBe(true);
@@ -218,7 +223,7 @@ describe('先読み', () => {
   it('失敗しても既存候補があれば継続する', () => {
     const before = { ...searched(10), prefetching: true };
 
-    const after = reducer(before, { type: 'prefetchFailed' });
+    const after = reducer(before, { type: 'prefetchFailed', startedAt: 1 });
 
     expect(after.error).toBeNull();
     expect(after.currentShop).not.toBeNull();
@@ -229,7 +234,7 @@ describe('先読み', () => {
     state = reducer(state, { type: 'prefetchStarted' });
     state = reducer(state, { type: 'ng' });
 
-    const after = reducer(state, { type: 'prefetchFailed' });
+    const after = reducer(state, { type: 'prefetchFailed', startedAt: 1 });
 
     expect(after.error).toBe('network');
   });
@@ -343,5 +348,49 @@ describe('セッションのTTL基準', () => {
 
     expect(session.startedAt).toBe(1_000);
     expect(restored.startedAt).toBe(1_000);
+  });
+});
+
+/** 応答の世代管理（古い応答の取り違え防止）。 */
+describe('世代の取り違え防止', () => {
+  it('古い検索の応答は捨てる', () => {
+    const state = run(initialState, { type: 'searchStarted', relaxLevel: 0, startedAt: 2 });
+
+    const after = reducer(state, {
+      type: 'searchSucceeded',
+      shops: shops(5),
+      nextStart: 51,
+      hasMore: true,
+      startedAt: 1,
+    });
+
+    expect(after).toBe(state);
+    expect(after.currentShop).toBeNull();
+  });
+
+  it('古い先読みの応答は捨てる', () => {
+    const state = { ...searched(), prefetching: true };
+
+    const after = reducer(state, {
+      type: 'prefetchSucceeded',
+      shops: shops(5, 't'),
+      nextStart: 101,
+      hasMore: true,
+      startedAt: 999,
+    });
+
+    expect(after).toBe(state);
+  });
+
+  it('古い先読みの失敗は状態を変えない', () => {
+    const state = { ...searched(), prefetching: true };
+
+    expect(reducer(state, { type: 'prefetchFailed', startedAt: 999 })).toBe(state);
+  });
+
+  it('同世代の先読み失敗は prefetching を戻す', () => {
+    const state = { ...searched(), prefetching: true };
+
+    expect(reducer(state, { type: 'prefetchFailed', startedAt: 1 }).prefetching).toBe(false);
   });
 });

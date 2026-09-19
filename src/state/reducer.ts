@@ -59,11 +59,24 @@ export type Action =
   | { type: 'locating' }
   | { type: 'locationAcquired'; location: GeoPoint }
   | { type: 'searchStarted'; relaxLevel: RelaxLevel; startedAt: number }
-  | { type: 'searchSucceeded'; shops: Shop[]; nextStart: number; hasMore: boolean }
+  | {
+      type: 'searchSucceeded';
+      shops: Shop[];
+      nextStart: number;
+      hasMore: boolean;
+      /** 検索開始時の startedAt。古い応答を捨てるための世代 */
+      startedAt: number;
+    }
   | { type: 'ng' }
   | { type: 'prefetchStarted' }
-  | { type: 'prefetchSucceeded'; shops: Shop[]; nextStart: number; hasMore: boolean }
-  | { type: 'prefetchFailed' }
+  | {
+      type: 'prefetchSucceeded';
+      shops: Shop[];
+      nextStart: number;
+      hasMore: boolean;
+      startedAt: number;
+    }
+  | { type: 'prefetchFailed'; startedAt: number }
   | { type: 'failed'; kind: ErrorKind }
   | { type: 'backToSearch' };
 
@@ -141,6 +154,10 @@ export function reducer(state: AppState, action: Action): AppState {
       };
 
     case 'searchSucceeded': {
+      // 新しい検索が始まっていれば古い応答は捨てる
+      if (action.startedAt !== state.startedAt) {
+        return state;
+      }
       const ordered = shuffleInChunks(action.shops, SHUFFLE_CHUNK_SIZE);
       const [first, ...rest] = ordered;
 
@@ -186,6 +203,9 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, prefetching: true };
 
     case 'prefetchSucceeded': {
+      if (action.startedAt !== state.startedAt) {
+        return state;
+      }
       const unique = mergeUniqueShops(state, action.shops);
       const ordered = shuffleInChunks(unique, SHUFFLE_CHUNK_SIZE);
 
@@ -222,6 +242,9 @@ export function reducer(state: AppState, action: Action): AppState {
     }
 
     case 'prefetchFailed':
+      if (action.startedAt !== state.startedAt) {
+        return state;
+      }
       // 既存候補があれば継続する（BAS-001 §14）
       return {
         ...state,
