@@ -39,6 +39,18 @@ export async function handleSearch(request: Request, env: WorkerEnv): Promise<Re
     }
   }
 
+  // 「候補が少ない」原因を切り分けるための診断ログ。
+  // どの絞り込みが効いて件数が落ちているかを後から追えるようにする。
+  // 緯度経度と店舗名は出さない（BE-001 §18）
+  console.log('upstream search', {
+    resultsAvailable: Number(upstream.results?.results_available ?? 0),
+    returned: shops.length,
+    budgetCodes: params.get('budget')?.split(',').length ?? 0,
+    genre: searchRequest.genreCode ?? 'any',
+    range: searchRequest.range,
+    preferences: Object.values(searchRequest.preferences).filter(Boolean).length,
+  });
+
   // HotPepperの返却順（おすすめ順）を保持する。シャッフルはF/Eが行う
   return json({ shops, paging: mapPaging(upstream) } satisfies SearchResponse);
 }

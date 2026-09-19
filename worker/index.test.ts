@@ -421,3 +421,32 @@ describe('APIキー未設定', () => {
     expect(stub.calls).toHaveLength(0);
   });
 });
+
+/** 候補が少ない原因の切り分け用ログ。 */
+describe('診断ログ', () => {
+  it('ヒット総数と効いている絞り込みを記録する', async () => {
+    const logs: unknown[][] = [];
+    vi.spyOn(console, 'log').mockImplementation((...args) => void logs.push(args));
+    stubFetch(hotpepperBody([shop()], { available: 137 }));
+
+    await call(searchRequest({ ...validRequest, budgetMax: 3000, genreCode: 'G013' }));
+    const dump = JSON.stringify(logs);
+
+    expect(dump).toContain('"resultsAvailable":137');
+    expect(dump).toContain('"genre":"G013"');
+    expect(dump).toContain('"preferences":2');
+    expect(dump).toMatch(/"budgetCodes":[1-9]/);
+  });
+
+  it('診断ログにも緯度経度と店舗名を出さない', async () => {
+    const logs: unknown[][] = [];
+    vi.spyOn(console, 'log').mockImplementation((...args) => void logs.push(args));
+    stubFetch(hotpepperBody([shop()]));
+
+    await call(searchRequest());
+    const dump = JSON.stringify(logs);
+
+    expect(dump).not.toContain(String(validRequest.lat));
+    expect(dump).not.toContain('とり吉');
+  });
+});

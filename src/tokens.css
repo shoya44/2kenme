@@ -16,6 +16,13 @@
   --radius-button: 16px;
   --radius-photo: 20px;
   --duration: 200ms;
+
+  /*
+   * セーフエリア。変数にしておくと、ノッチ端末の余白を
+   * ブラウザで上書きして再現・検証できる。
+   */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 @media (prefers-reduced-motion: reduce) {
