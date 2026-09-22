@@ -9,11 +9,15 @@ export class SearchApiError extends Error {
   }
 }
 
+/** 合言葉を載せるヘッダ（BE-001 §5）。 */
+const APP_TOKEN_HEADER = 'X-App-Token';
+
 /** 条件・現在地・ページング開始位置から店舗候補を取得する（FE-001 §18）。 */
 export async function fetchShops(
   condition: SearchCondition,
   location: GeoPoint,
   start: number,
+  passcode: string | null,
   signal?: AbortSignal,
 ): Promise<SearchResponse> {
   const body: SearchRequest = {
@@ -27,9 +31,14 @@ export async function fetchShops(
     start,
   };
 
+  const headers: Record<string, string> = { 'content-type': 'application/json' };
+  if (passcode !== null) {
+    headers[APP_TOKEN_HEADER] = passcode;
+  }
+
   const response = await fetch('/api/search', {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers,
     body: JSON.stringify(body),
     ...(signal ? { signal } : {}),
   });

@@ -1,5 +1,7 @@
+import { assertPasscode } from './auth';
 import { errorResponse, HttpError } from './http';
 import { UpstreamError } from './hotpepper';
+import { assertWithinRateLimit } from './ratelimit';
 import { handleSearch } from './search';
 import type { WorkerEnv } from './env';
 
@@ -60,6 +62,10 @@ async function route(request: Request, env: WorkerEnv, pathname: string): Promis
   }
 
   assertAllowedOrigin(request, env);
+
+  // レート制限は合言葉の照合より前に置く。総当たりも制限の対象にするため
+  await assertWithinRateLimit(request, env);
+  assertPasscode(request, env);
 
   return handleSearch(request, env);
 }

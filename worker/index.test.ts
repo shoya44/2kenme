@@ -6,6 +6,7 @@ import type { WorkerEnv } from './env';
 import worker from './index';
 import {
   ALLOWED_ORIGIN,
+  APP_PASSCODE,
   hotpepperBody,
   paramsOf,
   searchRequest,
@@ -14,7 +15,11 @@ import {
   validRequest,
 } from './test-helpers';
 
-const env: WorkerEnv = { HOTPEPPER_API_KEY: 'test-key', ALLOWED_ORIGIN };
+const env: WorkerEnv = {
+  HOTPEPPER_API_KEY: 'test-key',
+  ALLOWED_ORIGIN,
+  APP_PASSCODE,
+};
 
 /** worker を直接呼ぶ。SELF は外部fetchの差し替えが効かないため。 */
 function call(request: Request): Promise<Response> {
@@ -79,7 +84,10 @@ describe('Origin検証', () => {
 
   it('ALLOWED_ORIGIN 未設定なら Worker 自身のオリジンを許可する', async () => {
     stubFetch(hotpepperBody([shop()]));
-    const withoutOrigin: WorkerEnv = { HOTPEPPER_API_KEY: env.HOTPEPPER_API_KEY };
+    const withoutOrigin: WorkerEnv = {
+      HOTPEPPER_API_KEY: env.HOTPEPPER_API_KEY,
+      APP_PASSCODE,
+    };
 
     // リクエストURLのオリジンと同じ Origin ヘッダ
     const res = await worker.fetch(searchRequest(), withoutOrigin);
@@ -118,6 +126,133 @@ describe('Origin検証', () => {
     const res = await call(searchRequest());
 
     expect(res.headers.get('access-control-allow-origin')).toBeNull();
+  });
+});
+
+/** 合言葉（BE-001 §5）。 */
+describe('合言葉', () => {
+  it('一致すれば処理される', async () => {
+    stubFetch(hotpepperBody([shop()]));
+
+    const res = await call(searchRequest());
+
+    expect(res.status).toBe(200);
+  });
+
+  it('不一致なら403。上流は叩かない', async () => {
+    const stub = stubFetch(hotpepperBody([shop()]));
+
+    const res = await call(searchRequest(validRequest, { passcode: 'wrong-passcode' }));
+
+    expect(res.status).toBe(403);
+    await expect(res.json()).resolves.toEqual({ error: 'forbidden' });
+    expect(stub.calls).toHaveLength(0);
+  });
+
+  it('長さが違っても403', async () => {
+    const stub = stubFetch(hotpepperBody([shop()]));
+
+    const res = await call(searchRequest(validRequest, { passcode: 'short' }));
+
+    expect(res.status).toBe(403);
+    expect(stub.calls).toHaveLength(0);
+  });
+
+  it('ヘッダが無ければ403', async () => {
+    const stub = stubFetch(hotpepperBody([shop()]));
+
+    const res = await call(searchRequest(validRequest, { passcode: null }));
+
+    expect(res.status).toBe(403);
+    expect(stub.calls).toHaveLength(0);
+  });
+
+  it('APP_PASSCODE 未設定なら500。誰でも使える状態にはしない', async () => {
+    const stub = stubFetch(hotpepperBody([shop()]));
+    const withoutPasscode: WorkerEnv = { HOTPEPPER_API_KEY: env.HOTPEPPER_API_KEY, ALLOWED_ORIGIN };
+
+    const res = await worker.fetch(searchRequest(), withoutPasscode);
+
+    expect(res.status).toBe(500);
+    expect(stub.calls).toHaveLength(0);
+  });
+
+  it('合言葉をレスポンスへ書き出さない', async () => {
+    stubFetch(hotpepperBody([shop()]));
+
+    const res = await call(searchRequest());
+
+    expect(await res.text()).not.toContain(APP_PASSCODE);
+  });
+});
+
+/** レート制限（BE-001 §5）。 */
+describe('レート制限', () => {
+  const limiter = (success: boolean, calls: string[] = []) => ({
+    limit: async ({ key }: { key: string }) => {
+      calls.push(key);
+      return { success };
+    },
+  });
+
+  it('上限内なら処理される', async () => {
+    stubFetch(hotpepperBody([shop()]));
+
+    const res = await worker.fetch(searchRequest(), { ...env, RATE_LIMITER: limiter(true) });
+
+    expect(res.status).toBe(200);
+  });
+
+  it('上限を超えたら429。上流も合言葉照合も行わない', async () => {
+    const stub = stubFetch(hotpepperBody([shop()]));
+
+    const res = await worker.fetch(searchRequest(validRequest, { passcode: null }), {
+      ...env,
+      RATE_LIMITER: limiter(false),
+    });
+
+    expect(res.status).toBe(429);
+    await expect(res.json()).resolves.toEqual({ error: 'too many requests' });
+    expect(stub.calls).toHaveLength(0);
+  });
+
+  it('クライアントIPを鍵にする', async () => {
+    stubFetch(hotpepperBody([shop()]));
+    const keys: string[] = [];
+    const request = searchRequest();
+    request.headers.set('CF-Connecting-IP', '203.0.113.7');
+
+    await worker.fetch(request, { ...env, RATE_LIMITER: limiter(true, keys) });
+
+    expect(keys).toEqual(['203.0.113.7']);
+  });
+
+  it('IPが取れなければ一つの鍵にまとめる', async () => {
+    stubFetch(hotpepperBody([shop()]));
+    const keys: string[] = [];
+
+    await worker.fetch(searchRequest(), { ...env, RATE_LIMITER: limiter(true, keys) });
+
+    expect(keys).toEqual(['unknown']);
+  });
+
+  it('バインディングが無ければ制限しない', async () => {
+    stubFetch(hotpepperBody([shop()]));
+
+    const res = await call(searchRequest());
+
+    expect(res.status).toBe(200);
+  });
+
+  it('制限側が落ちても検索は通す', async () => {
+    stubFetch(hotpepperBody([shop()]));
+    const broken = {
+      limit: () => Promise.reject(new Error('unavailable')),
+    };
+
+    const res = await worker.fetch(searchRequest(), { ...env, RATE_LIMITER: broken });
+
+    expect(res.status).toBe(200);
   });
 });
 

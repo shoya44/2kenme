@@ -14,6 +14,7 @@ export default defineConfig({
           // テスト用のダミー値。実キーは使わない
           HOTPEPPER_API_KEY: 'test-key',
           ALLOWED_ORIGIN: 'https://tsugidoko.example.com',
+          APP_PASSCODE: 'test-passcode',
         },
       },
     }),

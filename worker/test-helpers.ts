@@ -5,6 +5,9 @@ import type { SearchRequest } from '../shared/api-types';
 
 export const ALLOWED_ORIGIN = 'https://tsugidoko.example.com';
 
+/** テスト用の合言葉。実値は使わない */
+export const APP_PASSCODE = 'test-passcode';
+
 export const validRequest: SearchRequest = {
   lat: 35.690921,
   lng: 139.700258,
@@ -16,16 +19,25 @@ export const validRequest: SearchRequest = {
   start: 1,
 };
 
-/** /api/search へのリクエストを作る。既定で許可済みOriginを付ける。 */
+/** /api/search へのリクエストを作る。既定で許可済みOriginと合言葉を付ける。 */
 export function searchRequest(
   body: unknown = validRequest,
-  init: { origin?: string | null; method?: string; rawBody?: string } = {},
+  init: {
+    origin?: string | null;
+    method?: string;
+    rawBody?: string;
+    /** 合言葉。null なら付けない */
+    passcode?: string | null;
+  } = {},
 ): Request {
-  const { origin = ALLOWED_ORIGIN, method = 'POST', rawBody } = init;
+  const { origin = ALLOWED_ORIGIN, method = 'POST', rawBody, passcode = APP_PASSCODE } = init;
 
   const headers = new Headers({ 'content-type': 'application/json' });
   if (origin !== null) {
     headers.set('Origin', origin);
+  }
+  if (passcode !== null) {
+    headers.set('X-App-Token', passcode);
   }
 
   return new Request(`${ALLOWED_ORIGIN}/api/search`, {

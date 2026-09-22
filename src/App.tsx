@@ -5,20 +5,24 @@ import { Header } from './components/Header';
 import { HistorySheet } from './components/HistorySheet';
 import { MenuSheet } from './components/MenuSheet';
 import styles from './components/ui.module.css';
+import { PasscodeScreen } from './screens/PasscodeScreen';
 import { ResultScreen } from './screens/ResultScreen';
 import { SearchScreen } from './screens/SearchScreen';
-import { fetchShops } from './services/api';
+import { fetchShops, SearchApiError } from './services/api';
 import { canPrimeLocation, getCurrentLocation, isGeoFresh } from './services/location';
 import {
   addHistory,
   clearDefaults,
   clearHistory,
+  clearPasscode,
   clearSession,
   DEFAULT_CONDITION,
   loadDefaults,
   loadHistory,
+  loadPasscode,
   loadSession,
   saveDefaults,
+  savePasscode,
   saveSession,
 } from './services/storage';
 import { initialState, reducer, shouldPrefetch, toSession, type AppState } from './state/reducer';
@@ -27,6 +31,11 @@ import { applyRelax, nextRelaxLevel, RELAX_LABELS, type RelaxLevel } from './uti
 import type { HistoryEntry, SearchCondition } from './types';
 
 type OpenSheet = 'none' | 'menu' | 'history' | 'about';
+
+/** 合言葉が拒否されたか。ネットワーク不調と区別する（BE-001 §5） */
+function isAuthError(error: unknown): boolean {
+  return error instanceof SearchApiError && error.status === 403;
+}
 
 export function App() {
   // 起動時に前回条件とセッションを復元する。effect ではなく遅延初期化で行う
@@ -40,6 +49,16 @@ export function App() {
   );
   const [history, setHistory] = useState<HistoryEntry[]>(loadHistory);
   const [sheet, setSheet] = useState<OpenSheet>('none');
+  // 合言葉。保存済みなら聞かない（FE-001 §29）
+  const [passcode, setPasscode] = useState<string | null>(loadPasscode);
+  const [passcodeRejected, setPasscodeRejected] = useState(false);
+
+  /** サーバーに拒否された合言葉は捨てて、入力画面へ戻す */
+  const rejectPasscode = useCallback(() => {
+    clearPasscode();
+    setPasscode(null);
+    setPasscodeRejected(true);
+  }, []);
 
   // 状態が変わるたびにセッションを保存する（現在地は含めない）
   useEffect(() => {
@@ -84,7 +103,7 @@ export function App() {
       }
 
       try {
-        const response = await fetchShops(applyRelax(condition, relaxLevel), location, 1);
+        const response = await fetchShops(applyRelax(condition, relaxLevel), location, 1, passcode);
         dispatch({
           type: 'searchSucceeded',
           shops: response.shops,
@@ -92,11 +111,15 @@ export function App() {
           hasMore: response.paging.hasMore,
           startedAt,
         });
-      } catch {
+      } catch (error) {
+        if (isAuthError(error)) {
+          rejectPasscode();
+          return;
+        }
         dispatch({ type: 'failed', kind: 'network' });
       }
     },
-    [state.location],
+    [passcode, rejectPasscode, state.location],
   );
 
   // 候補が少なくなったら次ページを先読みする
@@ -129,7 +152,7 @@ export function App() {
       }
 
       try {
-        const response = await fetchShops(condition, location, start);
+        const response = await fetchShops(condition, location, start, passcode);
         dispatch({
           type: 'prefetchSucceeded',
           shops: response.shops,
@@ -137,11 +160,14 @@ export function App() {
           hasMore: response.paging.hasMore,
           startedAt,
         });
-      } catch {
+      } catch (error) {
         dispatch({ type: 'prefetchFailed', startedAt });
+        if (isAuthError(error)) {
+          rejectPasscode();
+        }
       }
     })();
-  }, [state]);
+  }, [passcode, rejectPasscode, state]);
 
   const handleSearch = useCallback(() => {
     void runSearch(state.condition, 0);
@@ -182,7 +208,17 @@ export function App() {
         onGoHome={() => dispatch({ type: 'backToSearch' })}
       />
 
-      {state.screen === 'search' ? (
+      {/* 合言葉が未保存・拒否済みなら、まずここを通す（FE-001 §29） */}
+      {passcode === null ? (
+        <PasscodeScreen
+          rejected={passcodeRejected}
+          onSubmit={(value) => {
+            savePasscode(value);
+            setPasscode(value);
+            setPasscodeRejected(false);
+          }}
+        />
+      ) : state.screen === 'search' ? (
         <SearchScreen
           condition={state.condition}
           onChange={(condition) => dispatch({ type: 'setCondition', condition })}
