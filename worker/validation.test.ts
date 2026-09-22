@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { HttpError } from './http';
 import { validRequest } from './test-helpers';
+import { MAX_START } from '../shared/api-types';
 import { validateSearchRequest } from './validation';
 
 /** 入力検証（BE-001 §4 / TEST-001 §4）。 */
@@ -105,5 +106,11 @@ describe('validateSearchRequest', () => {
     it('1以上の整数は通る', () => {
       expect(validateSearchRequest(withField('start', 51)).start).toBe(51);
     });
+
+    it('MAX_START ちょうどは通る', () => {
+      expect(validateSearchRequest(withField('start', MAX_START)).start).toBe(MAX_START);
+    });
+
+    it('MAX_START を超えたら400', () => expectBadRequest(withField('start', MAX_START + 1)));
   });
 });

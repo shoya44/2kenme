@@ -192,6 +192,43 @@ describe('検索', () => {
     expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(1);
   });
 
+  it('ページ単位で候補が全滅しても、続きがあれば自動で次ページを提示する', async () => {
+    const user = userEvent.setup();
+    allowGeolocation();
+    // 1ページ目はB/Eの予算絞り込みで全滅。2ページ目に候補が残っている状況
+    stubSearch({ shops: [], paging: { nextStart: 51, hasMore: true } }, response([shop('a')]));
+    render(<App />);
+
+    await search(user);
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: '店 a' })).toBeInTheDocument());
+    expect(screen.queryByText('候補が見つかりませんでした')).toBeNull();
+  });
+
+  it('徒歩時間が無い店舗は徒歩の行を出さない', async () => {
+    const user = userEvent.setup();
+    allowGeolocation();
+    stubSearch(response([shop('a', { walkMinutes: null })]));
+    render(<App />);
+
+    await search(user);
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: '店 a' })).toBeInTheDocument());
+    expect(screen.queryByText(/徒歩 約/)).toBeNull();
+  });
+
+  it('予算が無い店舗は予算の行を出さない', async () => {
+    const user = userEvent.setup();
+    allowGeolocation();
+    stubSearch(response([shop('a', { budgetText: null })]));
+    render(<App />);
+
+    await search(user);
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: '店 a' })).toBeInTheDocument());
+    expect(screen.queryByText('予算情報なし')).toBeNull();
+  });
+
   it('現在地は「さがす」押下時に取得する', async () => {
     const user = userEvent.setup();
     const getCurrentPosition = allowGeolocation();
@@ -482,6 +519,31 @@ describe('履歴シート', () => {
 
     expect(within(dialog).queryByRole('img')).toBeNull();
     expect(within(dialog).getByText('店 a')).toBeInTheDocument();
+  });
+
+  it('徒歩時間が無い履歴は徒歩の表記を出さない', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem(
+      'tsugidoko:history',
+      JSON.stringify([
+        {
+          shopId: 'a',
+          name: '店 a',
+          hotpepperUrl: 'https://www.hotpepper.jp/stra/',
+          budgetText: '3001～4000円',
+          walkMinutes: null,
+          decidedAt: Date.now(),
+        },
+      ]),
+    );
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: 'メニュー' }));
+    await user.click(screen.getByRole('button', { name: '履歴' }));
+    const dialog = screen.getByRole('dialog', { name: '履歴' });
+
+    expect(within(dialog).queryByText(/徒歩/)).toBeNull();
+    expect(within(dialog).getByText('3001～4000円')).toBeInTheDocument();
   });
 
   it('クレジットを表示する', async () => {

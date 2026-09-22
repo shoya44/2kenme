@@ -394,3 +394,51 @@ describe('世代の取り違え防止', () => {
     expect(reducer(state, { type: 'prefetchFailed', startedAt: 1 }).prefetching).toBe(false);
   });
 });
+
+/** ページ単位の全滅と、NGの持ち越し（FE-001 §14, §15 / TEST-001 §5）。 */
+describe('候補の取り切り', () => {
+  const emptyPage = (hasMore: boolean) =>
+    run(
+      initialState,
+      { type: 'searchStarted', relaxLevel: 0, startedAt: 1 },
+      { type: 'searchSucceeded', shops: [], nextStart: 51, hasMore, startedAt: 1 },
+    );
+
+  it('0件でも続きがあれば候補なしにせず、次ページの位置を保つ', () => {
+    const state = emptyPage(true);
+
+    expect(state.noCandidate).toBe(false);
+    expect(state.nextStart).toBe(51);
+    expect(state.hasMore).toBe(true);
+    expect(shouldPrefetch(state)).toBe(true);
+  });
+
+  it('0件で続きも無ければ候補なしになる', () => {
+    expect(emptyPage(false).noCandidate).toBe(true);
+  });
+
+  it('緩和での再検索は、NGした店を引き継いで再提示しない', () => {
+    let state = searched(2);
+    const ngId = state.currentShop?.id;
+    state = reducer(state, { type: 'ng' });
+
+    state = run(
+      state,
+      { type: 'searchStarted', relaxLevel: 1, startedAt: 2, keepShown: true },
+      { type: 'searchSucceeded', shops: shops(2), nextStart: 51, hasMore: false, startedAt: 2 },
+    );
+
+    expect(state.shownIds).toContain(ngId);
+    expect(state.currentShop?.id).not.toBe(ngId);
+    expect(state.queue.map((s) => s.id)).not.toContain(ngId);
+  });
+
+  it('トップからの検索では表示済みを捨てる', () => {
+    let state = searched(2);
+    state = reducer(state, { type: 'ng' });
+
+    state = reducer(state, { type: 'searchStarted', relaxLevel: 0, startedAt: 2 });
+
+    expect(state.shownIds).toEqual([]);
+  });
+});

@@ -4,6 +4,13 @@ import { Sheet } from './Sheet';
 import styles from './ui.module.css';
 import type { HistoryEntry } from '../types';
 
+/** 徒歩時間・予算のうち、値のあるものだけを並べる */
+function historyMeta(entry: HistoryEntry): string {
+  return [entry.walkMinutes === null ? null : `徒歩 約${entry.walkMinutes}分`, entry.budgetText]
+    .filter((part) => part !== null)
+    .join(' ・ ');
+}
+
 interface Props {
   entries: readonly HistoryEntry[];
   onClose: () => void;
@@ -33,9 +40,8 @@ export function HistorySheet({ entries, onClose, onClear }: Props) {
             >
               <span className={styles.historyMain}>
                 <span className={styles.historyName}>{entry.name}</span>
-                <span className={styles.historyMeta}>
-                  徒歩 約{entry.walkMinutes}分{entry.budgetText ? ` ・ ${entry.budgetText}` : ''}
-                </span>
+                {/* 欠けている項目は出さない（DATA-001 §10） */}
+                <span className={styles.historyMeta}>{historyMeta(entry)}</span>
               </span>
               <span className={styles.historyDate}>{formatDate(entry.decidedAt)}</span>
               <ChevronRightIcon />

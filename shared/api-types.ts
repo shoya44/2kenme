@@ -16,6 +16,15 @@ export const GENRE_CODES = ['G001', 'G002', 'G012', 'G013', 'G014'] as const;
 /** ジャンルコード。null は「おまかせ」 */
 export type GenreCode = (typeof GENRE_CODES)[number] | null;
 
+/**
+ * HotPepperのページング開始位置の上限（BE-001 §4）。
+ *
+ * 1ページ50件で最大5ページ（250件）までを1検索の探索範囲とする。
+ * 上限を置かないと、B/Eの予算絞り込みで候補が落ちたときの自動ページ送りが
+ * 際限なく上流を叩き、コール枠を消費する。
+ */
+export const MAX_START = 201;
+
 /** 検索範囲。1=300m / 2=500m / 3=1km / 4=2km（FE-001 §8） */
 export type RangeCode = 1 | 2 | 3 | 4;
 
@@ -55,7 +64,8 @@ export interface Shop {
   photoUrl: string | null;
   hotpepperUrl: string;
   budgetText: string | null;
-  walkMinutes: number;
+  /** 徒歩時間（分）。店舗の緯度経度が欠けていて算出できない場合は null */
+  walkMinutes: number | null;
 }
 
 export interface Paging {

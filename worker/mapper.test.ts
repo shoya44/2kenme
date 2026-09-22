@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
+import { COUNT_PER_PAGE } from './hotpepper';
 import { mapPaging, mapShop } from './mapper';
 import { hotpepperBody, shop, validRequest } from './test-helpers';
+import { MAX_START } from '../shared/api-types';
 
 const { lat, lng } = validRequest;
 
@@ -54,6 +56,17 @@ describe('mapShop', () => {
     expect(mapShop(shop(overrides), lat, lng)).toBeNull();
   });
 
+  it.each([
+    ['緯度が無い', { lat: undefined }],
+    ['経度が無い', { lng: undefined }],
+    ['緯度が数値にならない', { lat: 'unknown' }],
+  ])('%s店舗は残し、徒歩時間を null にする', (_label, overrides) => {
+    const result = mapShop(shop(overrides), lat, lng);
+
+    expect(result?.id).toBe('J001');
+    expect(result?.walkMinutes).toBeNull();
+  });
+
   it('文字列で返る緯度経度も扱える', () => {
     const a = mapShop(shop({ lat: '35.6915', lng: '139.7005' }), lat, lng);
     const b = mapShop(shop({ lat: 35.6915, lng: 139.7005 }), lat, lng);
@@ -85,6 +98,20 @@ describe('mapPaging', () => {
     const body = hotpepperBody([], { start: 1, available: 0, returned: 0 });
 
     expect(mapPaging(body)).toEqual({ nextStart: 1, hasMore: false });
+  });
+
+  it('MAX_START は取得件数の倍数+1（ページ境界と一致する）', () => {
+    expect((MAX_START - 1) % COUNT_PER_PAGE).toBe(0);
+  });
+
+  it('MAX_START を超えるページは要求させない', () => {
+    const body = hotpepperBody([], {
+      start: MAX_START,
+      available: 100_000,
+      returned: 50,
+    });
+
+    expect(mapPaging(body)).toEqual({ nextStart: MAX_START + 50, hasMore: false });
   });
 
   it('results_returned が文字列でも扱える', () => {

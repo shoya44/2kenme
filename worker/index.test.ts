@@ -514,6 +514,24 @@ describe('includeUnknownBudget', () => {
     expect(body.shops.map((s) => s.id)).toEqual(['over']);
   });
 
+  it('false でも、上流が上限超の店を返したら落とす', async () => {
+    const over = BUDGET_MASTER.find((e) => e.max !== null && e.max > 3000);
+    const within = BUDGET_MASTER.find((e) => e.max !== null && e.max <= 3000);
+    stubFetch(
+      hotpepperBody([
+        withBudget(over?.code ?? '', 'over'),
+        withBudget(within?.code ?? '', 'within'),
+      ]),
+    );
+
+    const res = await call(
+      searchRequest({ ...validRequest, includeUnknownBudget: false, budgetMax: 3000 }),
+    );
+    const body = (await res.json()) as { shops: { id: string }[] };
+
+    expect(body.shops.map((s) => s.id)).toEqual(['within']);
+  });
+
   it('booleanでなければ400', async () => {
     const stub = stubFetch(hotpepperBody([]));
 
