@@ -66,6 +66,10 @@ export interface Shop {
   budgetText: string | null;
   /** 徒歩時間（分）。店舗の緯度経度が欠けていて算出できない場合は null */
   walkMinutes: number | null;
+  /** 営業時間。HotPepperの自由記述をそのまま渡す。未登録なら null */
+  openText: string | null;
+  /** 定休日。HotPepperの自由記述をそのまま渡す。未登録なら null */
+  closedText: string | null;
 }
 
 export interface Paging {

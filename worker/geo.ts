@@ -10,6 +10,15 @@ const DETOUR_RATIO = 1.3;
 /** 徒歩速度。不動産表示で慣例的に用いられる分速80m。 */
 const WALK_SPEED_M_PER_MIN = 80;
 
+/**
+ * この距離より近い店舗は候補から外す（BE-001 §11）。
+ *
+ * 2軒目を探すのは1軒目の店内なので、現在地と同じ地点の店舗は
+ * たいてい「いま居る店」になる。HotPepperの緯度経度は代表点で誤差を含むため、
+ * 同一ビル内の別店舗まで落としすぎない範囲に留める。
+ */
+export const NEAR_EXCLUSION_METERS = 40;
+
 /** Haversine式による2地点間の直線距離（m）。 */
 export function calcDistanceMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const toRad = (deg: number) => (deg * Math.PI) / 180;

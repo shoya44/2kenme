@@ -1,7 +1,9 @@
 import { describeCondition, rangeLabel } from '../constants';
 import {
+  CalendarIcon,
   CheckIcon,
   ChevronRightIcon,
+  ClockIcon,
   CloseIcon,
   ExternalLinkIcon,
   PhoneIcon,
@@ -53,23 +55,51 @@ export function ShopResult({ shop, condition, relaxNotice, onNg, onOk, disabled 
 
       {/* 欠けている項目は行ごと出さない。確度の低い値を見せない（FE-001 §11） */}
       <div className={styles.facts}>
-        {shop.walkMinutes !== null && (
+        {shop.walkMinutes ? (
           <div className={styles.fact}>
             <span className={styles.factIcon}>
               <PinIcon />
             </span>
             <span>徒歩 約{shop.walkMinutes}分</span>
           </div>
-        )}
+        ) : null}
 
-        {shop.budgetText !== null && (
+        {shop.budgetText ? (
           <div className={styles.fact}>
             <span className={styles.factIcon}>
               <YenIcon />
             </span>
             <span>{shop.budgetText}</span>
           </div>
-        )}
+        ) : null}
+
+        {/*
+          営業時間・定休日はHotPepperの自由記述をそのまま出す。
+          「営業中」かどうかは判定しない（FE-001 §11）
+        */}
+        {shop.openText ? (
+          <div className={`${styles.fact} ${styles.factStack}`}>
+            <span className={styles.factIcon}>
+              <ClockIcon />
+            </span>
+            <span className={styles.factBody}>
+              <span className={styles.factLabel}>営業時間</span>
+              <span className={styles.factValue}>{shop.openText}</span>
+            </span>
+          </div>
+        ) : null}
+
+        {shop.closedText ? (
+          <div className={`${styles.fact} ${styles.factStack}`}>
+            <span className={styles.factIcon}>
+              <CalendarIcon />
+            </span>
+            <span className={styles.factBody}>
+              <span className={styles.factLabel}>定休日</span>
+              <span className={styles.factValue}>{shop.closedText}</span>
+            </span>
+          </div>
+        ) : null}
 
         {/* 電話番号は保持せず、HotPepper店舗詳細から確認させる（REQ-001 F-11） */}
         <a

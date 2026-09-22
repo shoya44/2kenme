@@ -38,6 +38,10 @@ export interface HotPepperShop {
   photo?: { pc?: { l?: string; m?: string; s?: string }; mobile?: { l?: string; s?: string } };
   urls?: { pc?: string };
   budget?: { code?: string; name?: string; average?: string };
+  /** 営業時間（自由記述） */
+  open?: string;
+  /** 定休日（自由記述） */
+  close?: string;
 }
 
 /**

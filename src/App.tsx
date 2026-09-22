@@ -22,6 +22,7 @@ import {
   saveSession,
 } from './services/storage';
 import { initialState, reducer, shouldPrefetch, toSession, type AppState } from './state/reducer';
+import { isLateNight, withLateNightDefault } from './utils/latenight';
 import { applyRelax, nextRelaxLevel, RELAX_LABELS, type RelaxLevel } from './utils/relax';
 import type { HistoryEntry, SearchCondition } from './types';
 
@@ -30,7 +31,12 @@ type OpenSheet = 'none' | 'menu' | 'history' | 'about';
 export function App() {
   // 起動時に前回条件とセッションを復元する。effect ではなく遅延初期化で行う
   const [state, dispatch] = useReducer(reducer, undefined, () =>
-    reducer(initialState, { type: 'restore', condition: loadDefaults(), session: loadSession() }),
+    reducer(initialState, {
+      type: 'restore',
+      // 深夜帯は「23時以降営業」を既定でONにする（FE-001 §7）
+      condition: withLateNightDefault(loadDefaults()),
+      session: loadSession(),
+    }),
   );
   const [history, setHistory] = useState<HistoryEntry[]>(loadHistory);
   const [sheet, setSheet] = useState<OpenSheet>('none');
@@ -169,6 +175,7 @@ export function App() {
           busy={state.loading || state.locating}
           error={state.error}
           onRetry={handleRetry}
+          lateNight={isLateNight()}
         />
       ) : (
         <ResultScreen

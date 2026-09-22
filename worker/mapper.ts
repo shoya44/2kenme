@@ -12,6 +12,31 @@ function toNumber(value: number | string | undefined): number {
   return toFiniteNumber(value) ?? 0;
 }
 
+/** 空文字・空白だけの自由記述は「未登録」として扱う */
+function toText(value: string | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+}
+
+/**
+ * 現在地から店舗までの直線距離（m）。緯度経度が欠けていれば null。
+ *
+ * 「いま居る店」の除外（`NEAR_EXCLUSION_METERS`）と徒歩時間の算出で
+ * 同じ距離を使うため、解釈をここに1つだけ置く。
+ */
+export function shopDistanceMeters(
+  shop: HotPepperShop,
+  originLat: number,
+  originLng: number,
+): number | null {
+  const lat = toFiniteNumber(shop.lat);
+  const lng = toFiniteNumber(shop.lng);
+  if (lat === null || lng === null) {
+    return null;
+  }
+  return calcDistanceMeters(originLat, originLng, lat, lng);
+}
+
 /**
  * HotPepperの店舗を結果画面が使う形へ落とす（BE-001 §11）。
  *
@@ -29,12 +54,7 @@ export function mapShop(shop: HotPepperShop, originLat: number, originLng: numbe
     return null;
   }
 
-  const lat = toFiniteNumber(shop.lat);
-  const lng = toFiniteNumber(shop.lng);
-  const walkMinutes =
-    lat === null || lng === null
-      ? null
-      : calcWalkMinutes(calcDistanceMeters(originLat, originLng, lat, lng));
+  const distanceMeters = shopDistanceMeters(shop, originLat, originLng);
 
   return {
     id,
@@ -42,7 +62,11 @@ export function mapShop(shop: HotPepperShop, originLat: number, originLng: numbe
     photoUrl: shop.photo?.pc?.l ?? shop.photo?.mobile?.l ?? null,
     hotpepperUrl,
     budgetText: shop.budget?.name ?? null,
-    walkMinutes,
+    walkMinutes: distanceMeters === null ? null : calcWalkMinutes(distanceMeters),
+    // 営業中かどうかの判定はしない。自由記述で機械判定が当たらず、
+    // 閉店中の店を「営業中」と示す誤りの方が害が大きい（BE-001 §11）
+    openText: toText(shop.open),
+    closedText: toText(shop.close),
   };
 }
 

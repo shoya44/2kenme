@@ -19,6 +19,8 @@ const shop = (id: string): Shop => ({
   hotpepperUrl: `https://www.hotpepper.jp/str${id}/`,
   budgetText: '3001～4000円',
   walkMinutes: 4,
+  openText: null,
+  closedText: null,
 });
 
 const shops = (n: number, prefix = 's') =>
