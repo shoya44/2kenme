@@ -452,6 +452,32 @@ describe('診断ログ', () => {
   });
 });
 
+/** いま居る店の除外（BE-001 §11）。 */
+describe('現在地と同じ地点の店舗', () => {
+  it('近すぎる店舗は候補から外す', async () => {
+    stubFetch(
+      hotpepperBody([
+        shop({ id: 'here', lat: validRequest.lat, lng: validRequest.lng }),
+        shop({ id: 'near', lat: validRequest.lat + 0.01, lng: validRequest.lng }),
+      ]),
+    );
+
+    const res = await call(searchRequest(validRequest));
+    const body = (await res.json()) as { shops: { id: string }[] };
+
+    expect(body.shops.map((s) => s.id)).toEqual(['near']);
+  });
+
+  it('緯度経度が無い店舗は距離で外さない', async () => {
+    stubFetch(hotpepperBody([shop({ id: 'nogeo', lat: undefined, lng: undefined })]));
+
+    const res = await call(searchRequest(validRequest));
+    const body = (await res.json()) as { shops: { id: string }[] };
+
+    expect(body.shops.map((s) => s.id)).toEqual(['nogeo']);
+  });
+});
+
 /** 予算未登録を含める（BE-001 §6）。 */
 describe('includeUnknownBudget', () => {
   const withBudget = (code: string, id: string) => shop({ id, budget: { code, name: 'x' } });

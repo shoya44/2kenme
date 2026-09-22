@@ -35,6 +35,8 @@ const shop = (overrides: Partial<Shop> = {}): Shop => ({
   hotpepperUrl: 'https://www.hotpepper.jp/strJ001/',
   budgetText: '3001～4000円',
   walkMinutes: 4,
+  openText: '17:00～翌2:00',
+  closedText: '日曜日',
   ...overrides,
 });
 

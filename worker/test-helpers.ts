@@ -47,6 +47,8 @@ export function shop(overrides: ShopOverrides = {}): HotPepperShop {
     photo: { pc: { l: 'https://example.com/l.jpg' }, mobile: { l: 'https://example.com/m.jpg' } },
     urls: { pc: 'https://www.hotpepper.jp/strJ001/' },
     budget: { code: 'B003', name: '3001～4000円' },
+    open: '月～日、祝日、祝前日: 17:00～翌2:00',
+    close: '日曜日',
   };
   return { ...base, ...overrides } as HotPepperShop;
 }

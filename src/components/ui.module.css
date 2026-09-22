@@ -205,6 +205,14 @@
   color: var(--text-tertiary);
 }
 
+/* 深夜帯の既定ONの注記。こだわりアコーディオンの直下に寄せる */
+.lateNightNote {
+  margin: -8px var(--gutter) 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-tertiary);
+}
+
 /* ---- 検索条件の表示 ---- */
 .conditionSummary {
   padding: 4px var(--gutter) 0;
@@ -388,6 +396,28 @@
   place-items: center;
   background: var(--surface-subtle);
   color: var(--text-secondary);
+}
+
+/* 営業時間のような長い自由記述。アイコンを先頭に合わせて折り返す */
+.factStack {
+  align-items: flex-start;
+  padding: 15px 0;
+}
+
+.factBody {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.factLabel {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.factValue {
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .factTail {

@@ -42,6 +42,24 @@ export function PhoneIcon({ size = 16 }: { size?: number }) {
   );
 }
 
+export function ClockIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg {...base} width={size} height={size} viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3.2 2" />
+    </svg>
+  );
+}
+
+export function CalendarIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg {...base} width={size} height={size} viewBox="0 0 24 24">
+      <rect x="3.5" y="5.5" width="17" height="15" rx="2.5" />
+      <path d="M3.5 10h17M8 3.5v4M16 3.5v4" />
+    </svg>
+  );
+}
+
 export function ExternalLinkIcon({ size = 17 }: { size?: number }) {
   return (
     <svg {...base} width={size} height={size} viewBox="0 0 24 24">

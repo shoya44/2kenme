@@ -19,6 +19,8 @@ describe('mapShop', () => {
       hotpepperUrl: 'https://www.hotpepper.jp/strJ001/',
       budgetText: '3001～4000円',
       walkMinutes: expect.any(Number),
+      openText: '月～日、祝日、祝前日: 17:00～翌2:00',
+      closedText: '日曜日',
     });
   });
 
@@ -46,6 +48,23 @@ describe('mapShop', () => {
 
   it('予算が無ければnull', () => {
     expect(mapShop(shop({ budget: undefined }), lat, lng)?.budgetText).toBeNull();
+  });
+
+  it('営業時間・定休日が無ければnull', () => {
+    const result = mapShop(shop({ open: undefined, close: undefined }), lat, lng);
+
+    expect(result?.openText).toBeNull();
+    expect(result?.closedText).toBeNull();
+  });
+
+  it('営業時間が空白だけならnull', () => {
+    expect(mapShop(shop({ open: '   ' }), lat, lng)?.openText).toBeNull();
+  });
+
+  it('営業時間は加工せずそのまま渡す', () => {
+    const open = '月～金: 17:00～翌1:00（料理L.O. 24:00）／土日祝: 16:00～翌2:00';
+
+    expect(mapShop(shop({ open }), lat, lng)?.openText).toBe(open);
   });
 
   it.each([

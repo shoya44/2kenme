@@ -5,6 +5,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import type { SearchResponse, Shop } from '../shared/api-types';
 
+/**
+ * 深夜帯の既定ON（`utils/latenight`）は端末時刻を見るため、テストでは固定する。
+ * 既定は深夜帯ではない時刻。深夜帯の挙動は専用のテストで `clock.now` を差し替える。
+ */
+const clock = vi.hoisted(() => ({ now: new Date(2026, 8, 22, 19, 0, 0) }));
+
+vi.mock('./utils/latenight', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./utils/latenight')>();
+  return {
+    ...actual,
+    isLateNight: (now?: Date) => actual.isLateNight(now ?? clock.now),
+    withLateNightDefault: (
+      condition: Parameters<typeof actual.withLateNightDefault>[0],
+      now?: Date,
+    ) => actual.withLateNightDefault(condition, now ?? clock.now),
+  };
+});
+
 const shop = (id: string, overrides: Partial<Shop> = {}): Shop => ({
   id,
   name: `店 ${id}`,
@@ -12,6 +30,8 @@ const shop = (id: string, overrides: Partial<Shop> = {}): Shop => ({
   hotpepperUrl: `https://www.hotpepper.jp/str${id}/`,
   budgetText: '3001～4000円',
   walkMinutes: 4,
+  openText: null,
+  closedText: null,
   ...overrides,
 });
 
@@ -55,6 +75,7 @@ async function search(user: ReturnType<typeof userEvent.setup>) {
 beforeEach(() => {
   localStorage.clear();
   sessionStorage.clear();
+  clock.now = new Date(2026, 8, 22, 19, 0, 0);
 });
 
 afterEach(() => {
@@ -68,6 +89,39 @@ describe('トップ画面', () => {
     render(<App />);
 
     expect(screen.getByRole('heading', { name: 'つぎどこ' })).toBeInTheDocument();
+  });
+
+  it('深夜帯は「23時以降営業」がONになり、その旨を表示する', async () => {
+    const user = userEvent.setup();
+    clock.now = new Date(2026, 8, 22, 23, 30, 0);
+    render(<App />);
+
+    expect(screen.getByText(/深夜帯のため「23時以降営業」をONにしています/)).toBeInTheDocument();
+
+    await user.click(screen.getByText('こだわり'));
+    expect(screen.getByRole('checkbox', { name: '23時以降営業' })).toBeChecked();
+  });
+
+  it('深夜帯でなければ「23時以降営業」はOFFのまま', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(screen.queryByText(/深夜帯のため/)).toBeNull();
+
+    await user.click(screen.getByText('こだわり'));
+    expect(screen.getByRole('checkbox', { name: '23時以降営業' })).not.toBeChecked();
+  });
+
+  it('深夜帯の既定ONは外せる', async () => {
+    const user = userEvent.setup();
+    clock.now = new Date(2026, 8, 23, 1, 0, 0);
+    render(<App />);
+    await user.click(screen.getByText('こだわり'));
+
+    await user.click(screen.getByRole('checkbox', { name: '23時以降営業' }));
+
+    expect(screen.getByRole('checkbox', { name: '23時以降営業' })).not.toBeChecked();
+    expect(screen.queryByText(/深夜帯のため/)).toBeNull();
   });
 
   it('「人数」ステッパーが存在しない', () => {
@@ -203,6 +257,34 @@ describe('検索', () => {
 
     await waitFor(() => expect(screen.getByRole('heading', { name: '店 a' })).toBeInTheDocument());
     expect(screen.queryByText('候補が見つかりませんでした')).toBeNull();
+  });
+
+  it('営業時間・定休日を表示する（営業中の判定はしない）', async () => {
+    const user = userEvent.setup();
+    allowGeolocation();
+    stubSearch(response([shop('a', { openText: '月～日: 17:00～翌2:00', closedText: '日曜日' })]));
+    render(<App />);
+
+    await search(user);
+
+    await waitFor(() => expect(screen.getByText('営業時間')).toBeInTheDocument());
+    expect(screen.getByText('月～日: 17:00～翌2:00')).toBeInTheDocument();
+    expect(screen.getByText('定休日')).toBeInTheDocument();
+    expect(screen.getByText('日曜日')).toBeInTheDocument();
+    expect(screen.queryByText(/営業中/)).toBeNull();
+  });
+
+  it('営業時間が無い店舗はその行を出さない', async () => {
+    const user = userEvent.setup();
+    allowGeolocation();
+    stubSearch(response([shop('a')]));
+    render(<App />);
+
+    await search(user);
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: '店 a' })).toBeInTheDocument());
+    expect(screen.queryByText('営業時間')).toBeNull();
+    expect(screen.queryByText('定休日')).toBeNull();
   });
 
   it('徒歩時間が無い店舗は徒歩の行を出さない', async () => {

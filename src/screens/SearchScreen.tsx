@@ -20,6 +20,8 @@ interface Props {
   /** 位置情報・通信の失敗。トップ画面に留まるため、ここで見せる */
   error: ErrorKind | null;
   onRetry: () => void;
+  /** 深夜帯。「23時以降営業」を既定でONにしたことを知らせる */
+  lateNight: boolean;
 }
 
 export function SearchScreen({
@@ -30,6 +32,7 @@ export function SearchScreen({
   busy,
   error,
   onRetry,
+  lateNight,
 }: Props) {
   const rangeIndex = Math.max(
     0,
@@ -54,6 +57,13 @@ export function SearchScreen({
         value={condition.preferences}
         onChange={(preferences) => onChange({ ...condition, preferences })}
       />
+
+      {/* 自動でONにした条件は黙って適用せず、外せることも示す（FE-001 §7） */}
+      {lateNight && condition.preferences.midnight && (
+        <p className={styles.lateNightNote}>
+          深夜帯のため「23時以降営業」をONにしています。外すこともできます。
+        </p>
+      )}
 
       <DiscreteSlider
         label="距離"

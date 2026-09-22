@@ -6,7 +6,8 @@ import {
   UpstreamError,
 } from './hotpepper';
 import { isWithinBudgetMax } from './budget';
-import { mapPaging, mapShop } from './mapper';
+import { NEAR_EXCLUSION_METERS } from './geo';
+import { mapPaging, mapShop, shopDistanceMeters } from './mapper';
 import { validateSearchRequest } from './validation';
 import type { SearchResponse, Shop } from '../shared/api-types';
 import type { WorkerEnv } from './env';
@@ -34,12 +35,20 @@ export async function handleSearch(request: Request, env: WorkerEnv): Promise<Re
 
   const shops: Shop[] = [];
   let droppedByBudget = 0;
+  let droppedByDistance = 0;
 
   for (const raw of upstream.results?.shop ?? []) {
     // 未登録を含める場合はHotPepperへ予算を渡していないので、ここで絞る。
     // 送っている場合も、上流の絞り込みを信頼しきらず同じ判定を通す（BE-001 §6）
     if (!isWithinBudgetMax(raw.budget?.code, searchRequest.budgetMax)) {
       droppedByBudget += 1;
+      continue;
+    }
+
+    // 現在地と同じ地点の店舗は「いま居る店」とみなして外す（BE-001 §11）
+    const distance = shopDistanceMeters(raw, searchRequest.lat, searchRequest.lng);
+    if (distance !== null && distance < NEAR_EXCLUSION_METERS) {
+      droppedByDistance += 1;
       continue;
     }
 
@@ -58,6 +67,7 @@ export async function handleSearch(request: Request, env: WorkerEnv): Promise<Re
     budgetCodes: params.get('budget')?.split(',').length ?? 0,
     includeUnknownBudget: searchRequest.includeUnknownBudget,
     droppedByBudget,
+    droppedByDistance,
     genre: searchRequest.genreCode ?? 'any',
     range: searchRequest.range,
     preferences: Object.values(searchRequest.preferences).filter(Boolean).length,
