@@ -58,7 +58,13 @@ export type Action =
   | { type: 'setCondition'; condition: SearchCondition }
   | { type: 'locating' }
   | { type: 'locationAcquired'; location: GeoPoint }
-  | { type: 'searchStarted'; relaxLevel: RelaxLevel; startedAt: number }
+  | {
+      type: 'searchStarted';
+      relaxLevel: RelaxLevel;
+      startedAt: number;
+      /** 表示済みIDを引き継ぐか。条件緩和は同じ抽選の続きなので引き継ぐ（FE-001 §15） */
+      keepShown?: boolean;
+    }
   | {
       type: 'searchSucceeded';
       shops: Shop[];
@@ -138,7 +144,8 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, location: action.location, locating: false };
 
     case 'searchStarted':
-      // 再検索では前回セッションを捨てる
+      // 再検索では前回の候補を捨てる。
+      // 表示済みIDだけは、緩和・再試行なら引き継いでNG済みの店を再提示しない（F-06）
       return {
         ...state,
         relaxLevel: action.relaxLevel,
@@ -148,7 +155,7 @@ export function reducer(state: AppState, action: Action): AppState {
         noCandidate: false,
         currentShop: null,
         queue: [],
-        shownIds: [],
+        shownIds: action.keepShown ? state.shownIds : [],
         nextStart: 1,
         hasMore: false,
       };
@@ -158,11 +165,21 @@ export function reducer(state: AppState, action: Action): AppState {
       if (action.startedAt !== state.startedAt) {
         return state;
       }
-      const ordered = shuffleInChunks(action.shops, SHUFFLE_CHUNK_SIZE);
+      const ordered = shuffleInChunks(mergeUniqueShops(state, action.shops), SHUFFLE_CHUNK_SIZE);
       const [first, ...rest] = ordered;
 
       if (!first) {
-        return { ...state, loading: false, screen: 'result', noCandidate: true, hasMore: false };
+        // このページが空でも続きがあるなら候補なしにはしない。
+        // 予算絞り込みや重複排除でページ単位に全滅することがあり、
+        // そこで打ち切ると候補が残っているのに「候補なし」を出してしまう（FE-001 §14）
+        return {
+          ...state,
+          loading: false,
+          screen: 'result',
+          nextStart: action.nextStart,
+          hasMore: action.hasMore,
+          noCandidate: !action.hasMore,
+        };
       }
 
       return {
@@ -171,7 +188,6 @@ export function reducer(state: AppState, action: Action): AppState {
         screen: 'result',
         currentShop: first,
         queue: rest,
-        shownIds: [],
         nextStart: action.nextStart,
         hasMore: action.hasMore,
         noCandidate: false,

@@ -51,20 +51,25 @@ export function ShopResult({ shop, condition, relaxNotice, onNg, onOk, disabled 
         ホットペッパーで見る
       </a>
 
+      {/* 欠けている項目は行ごと出さない。確度の低い値を見せない（FE-001 §11） */}
       <div className={styles.facts}>
-        <div className={styles.fact}>
-          <span className={styles.factIcon}>
-            <PinIcon />
-          </span>
-          <span>徒歩 約{shop.walkMinutes}分</span>
-        </div>
+        {shop.walkMinutes !== null && (
+          <div className={styles.fact}>
+            <span className={styles.factIcon}>
+              <PinIcon />
+            </span>
+            <span>徒歩 約{shop.walkMinutes}分</span>
+          </div>
+        )}
 
-        <div className={styles.fact}>
-          <span className={styles.factIcon}>
-            <YenIcon />
-          </span>
-          <span>{shop.budgetText ?? '予算情報なし'}</span>
-        </div>
+        {shop.budgetText !== null && (
+          <div className={styles.fact}>
+            <span className={styles.factIcon}>
+              <YenIcon />
+            </span>
+            <span>{shop.budgetText}</span>
+          </div>
+        )}
 
         {/* 電話番号は保持せず、HotPepper店舗詳細から確認させる（REQ-001 F-11） */}
         <a

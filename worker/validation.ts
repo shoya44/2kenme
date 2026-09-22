@@ -2,6 +2,7 @@ import { HttpError } from './http';
 import {
   BUDGET_MAX_OPTIONS,
   GENRE_CODES,
+  MAX_START,
   type BudgetMax,
   type GenreCode,
   type Preferences,
@@ -77,7 +78,8 @@ function assertRange(value: unknown): RangeCode {
 }
 
 function assertStart(value: unknown): number {
-  if (typeof value !== 'number' || !Number.isInteger(value) || value < 1) {
+  // 上限を設けないと、1回の検索で上流を際限なく叩けてしまう（BE-001 §4）
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 1 || value > MAX_START) {
     bad('invalid start');
   }
   return value;

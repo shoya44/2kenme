@@ -43,9 +43,9 @@ export function App() {
   }, [state]);
 
   const runSearch = useCallback(
-    async (condition: SearchCondition, relaxLevel: RelaxLevel) => {
+    async (condition: SearchCondition, relaxLevel: RelaxLevel, keepShown = false) => {
       const startedAt = Date.now();
-      dispatch({ type: 'searchStarted', relaxLevel, startedAt });
+      dispatch({ type: 'searchStarted', relaxLevel, startedAt, keepShown });
       saveDefaults(condition);
       clearSession();
 
@@ -130,11 +130,12 @@ export function App() {
     if (next === null) {
       return;
     }
-    void runSearch(state.condition, next);
+    // 緩和は同じ抽選の続き。NG済みの店は再提示しない
+    void runSearch(state.condition, next, true);
   }, [runSearch, state.condition, state.relaxLevel]);
 
   const handleRetry = useCallback(() => {
-    void runSearch(state.condition, state.relaxLevel);
+    void runSearch(state.condition, state.relaxLevel, true);
   }, [runSearch, state.condition, state.relaxLevel]);
 
   /** OKは a 要素のクリックと同期で実行する。preventDefault しない（FE-001 §13） */

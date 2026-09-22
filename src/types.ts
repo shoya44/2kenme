@@ -25,6 +25,7 @@ export interface HistoryEntry {
   name: string;
   hotpepperUrl: string;
   budgetText: string | null;
-  walkMinutes: number;
+  /** 徒歩時間（分）。算出できなかった場合は null */
+  walkMinutes: number | null;
   decidedAt: number;
 }

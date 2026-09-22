@@ -36,11 +36,9 @@ export async function handleSearch(request: Request, env: WorkerEnv): Promise<Re
   let droppedByBudget = 0;
 
   for (const raw of upstream.results?.shop ?? []) {
-    // 未登録を含める場合はHotPepperへ予算を渡していないので、ここで絞る
-    if (
-      searchRequest.includeUnknownBudget &&
-      !isWithinBudgetMax(raw.budget?.code, searchRequest.budgetMax)
-    ) {
+    // 未登録を含める場合はHotPepperへ予算を渡していないので、ここで絞る。
+    // 送っている場合も、上流の絞り込みを信頼しきらず同じ判定を通す（BE-001 §6）
+    if (!isWithinBudgetMax(raw.budget?.code, searchRequest.budgetMax)) {
       droppedByBudget += 1;
       continue;
     }
