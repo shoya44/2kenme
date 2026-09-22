@@ -14,6 +14,15 @@ const KEYS = {
 export const SESSION_TTL_MS = 2 * 60 * 60 * 1000;
 
 /**
+ * 離脱から復帰までの猶予。これを過ぎたらトップ画面から始める（DATA-001 §7）。
+ *
+ * 目的は「地図やメッセージを見て戻る」間だけ提示中の店を保つこと。
+ * iOSのPWAはアプリを切り替えただけでも破棄されるため、それと
+ * ユーザーが意図して開き直したのとは区別できない。経過時間で代える。
+ */
+export const RESUME_WINDOW_MS = 5 * 60 * 1000;
+
+/**
  * 現在地の鮮度。これを過ぎたら取り直す（DATA-001 §6）。
  *
  * 1軒目から2軒目へ歩く用途なので、数百m動いたあとの検索で古い地点を
@@ -43,6 +52,8 @@ export interface SearchSession {
   nextStart: number;
   hasMore: boolean;
   startedAt: number;
+  /** 最後に操作した、または画面を離れた時刻。復帰の可否を決める基準 */
+  lastActiveAt: number;
 }
 
 /**
@@ -192,15 +203,35 @@ export function loadSession(now = Date.now()): SearchSession | null {
   if (!stored || typeof stored.startedAt !== 'number') {
     return null;
   }
-  if (now - stored.startedAt > SESSION_TTL_MS) {
+
+  // lastActiveAt が無いのは旧バージョンが書いたセッション。開始時刻で代替する
+  const lastActiveAt =
+    typeof stored.lastActiveAt === 'number' ? stored.lastActiveAt : stored.startedAt;
+
+  if (now - lastActiveAt > RESUME_WINDOW_MS || now - stored.startedAt > SESSION_TTL_MS) {
     clearSession();
     return null;
   }
   return stored;
 }
 
-export function saveSession(session: SearchSession): void {
-  write('local', KEYS.session, session);
+/** 保存のたびに最終操作時刻を打ち直す。呼び出し側が意識しなくてよいようにする。 */
+export function saveSession(session: Omit<SearchSession, 'lastActiveAt'>, now = Date.now()): void {
+  write('local', KEYS.session, { ...session, lastActiveAt: now });
+}
+
+/**
+ * 画面を離れた時刻を記録する（DATA-001 §7）。
+ *
+ * 結果画面を開いたまま放置して離脱した場合に、最後の「操作」ではなく
+ * 「離れた時刻」を基準に復帰の可否を判断するため。
+ */
+export function touchSession(now = Date.now()): void {
+  const stored = read<SearchSession>('local', KEYS.session);
+  if (!stored) {
+    return;
+  }
+  write('local', KEYS.session, { ...stored, lastActiveAt: now });
 }
 
 export function clearSession(): void {

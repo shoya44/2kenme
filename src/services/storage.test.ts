@@ -12,6 +12,7 @@ import {
   loadPasscode,
   markGeoGranted,
   savePasscode,
+  touchSession,
   HISTORY_LIMIT,
   loadDefaults,
   loadGeo,
@@ -20,6 +21,7 @@ import {
   saveDefaults,
   saveGeo,
   saveSession,
+  RESUME_WINDOW_MS,
   SESSION_TTL_MS,
   STORAGE_KEYS,
   type SearchSession,
@@ -52,6 +54,7 @@ const session = (overrides: Partial<SearchSession> = {}): SearchSession => ({
   currentShop: shop(),
   queue: [],
   shownIds: [],
+  lastActiveAt: 1_700_000_000_000,
   nextStart: 51,
   hasMore: true,
   startedAt: Date.now(),
@@ -176,19 +179,63 @@ describe('session', () => {
     expect(loadSession()).toBeNull();
   });
 
-  it('TTL内なら復元する', () => {
+  it('離脱から猶予内なら復元する', () => {
     const now = 1_700_000_000_000;
-    saveSession(session({ startedAt: now }));
+    saveSession(session({ startedAt: now }), now);
 
-    expect(loadSession(now + SESSION_TTL_MS - 1)?.nextStart).toBe(51);
+    expect(loadSession(now + RESUME_WINDOW_MS)?.nextStart).toBe(51);
   });
 
-  it('TTLを超えたら破棄してnullを返す', () => {
+  it('離脱から猶予を超えたら破棄してnullを返す（立ち上げ直しはトップ画面）', () => {
     const now = 1_700_000_000_000;
-    saveSession(session({ startedAt: now }));
+    saveSession(session({ startedAt: now }), now);
 
-    expect(loadSession(now + SESSION_TTL_MS + 1)).toBeNull();
+    expect(loadSession(now + RESUME_WINDOW_MS + 1)).toBeNull();
     expect(localStorage.getItem(STORAGE_KEYS.session)).toBeNull();
+  });
+
+  it('操作を続けていても、検索開始からTTLを超えたら破棄する', () => {
+    const now = 1_700_000_000_000;
+    const late = now + SESSION_TTL_MS + 1;
+    // 直前まで操作していた（lastActiveAt は新しい）が、検索開始は2時間以上前
+    saveSession(session({ startedAt: now }), late);
+
+    expect(loadSession(late)).toBeNull();
+  });
+
+  it('保存のたびに最終操作時刻を打ち直す', () => {
+    const now = 1_700_000_000_000;
+    saveSession(session({ startedAt: now }), now);
+
+    saveSession(session({ startedAt: now }), now + RESUME_WINDOW_MS);
+
+    // 打ち直した時刻が基準になる
+    expect(loadSession(now + RESUME_WINDOW_MS * 2)?.nextStart).toBe(51);
+  });
+
+  it('離脱時刻を記録できる', () => {
+    const now = 1_700_000_000_000;
+    saveSession(session({ startedAt: now }), now);
+
+    touchSession(now + RESUME_WINDOW_MS);
+
+    expect(loadSession(now + RESUME_WINDOW_MS * 2)?.nextStart).toBe(51);
+  });
+
+  it('セッションが無ければ離脱時刻の記録は何もしない', () => {
+    touchSession();
+
+    expect(localStorage.getItem(STORAGE_KEYS.session)).toBeNull();
+  });
+
+  it('lastActiveAt が無い旧データは開始時刻で判断する', () => {
+    const now = 1_700_000_000_000;
+    const legacy: Record<string, unknown> = { ...session({ startedAt: now }) };
+    delete legacy.lastActiveAt;
+    localStorage.setItem(STORAGE_KEYS.session, JSON.stringify(legacy));
+
+    expect(loadSession(now + RESUME_WINDOW_MS)?.nextStart).toBe(51);
+    expect(loadSession(now + RESUME_WINDOW_MS + 1)).toBeNull();
   });
 
   it('現在地を含めない', () => {

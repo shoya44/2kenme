@@ -3,7 +3,13 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from './App';
-import { GEO_TTL_MS, savePasscode, STORAGE_KEYS } from './services/storage';
+import {
+  DEFAULT_CONDITION,
+  GEO_TTL_MS,
+  RESUME_WINDOW_MS,
+  savePasscode,
+  STORAGE_KEYS,
+} from './services/storage';
 import type { SearchResponse, Shop } from '../shared/api-types';
 
 /**
@@ -814,7 +820,7 @@ describe('復元', () => {
 /** セッション復帰（DATA-001 §2 / FE-001 §23）。 */
 describe('セッション復帰', () => {
   /** 現在地を持たない復帰直後の状態を作る。 */
-  function seedSession(shops: Shop[], hasMore: boolean) {
+  function seedSession(shops: Shop[], hasMore: boolean, lastActiveAt = Date.now()) {
     localStorage.setItem(
       'tsugidoko:session',
       JSON.stringify({
@@ -831,6 +837,7 @@ describe('セッション復帰', () => {
         nextStart: 51,
         hasMore,
         startedAt: Date.now(),
+        lastActiveAt,
       }),
     );
   }
@@ -841,6 +848,42 @@ describe('セッション復帰', () => {
     render(<App />);
 
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('店 a');
+  });
+
+  it('離脱から猶予を過ぎていればトップ画面から始める', () => {
+    seedSession([shop('a'), shop('b')], false, Date.now() - RESUME_WINDOW_MS - 1);
+
+    render(<App />);
+
+    expect(screen.getByRole('button', { name: 'さがす' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /NG/ })).toBeNull();
+  });
+
+  it('トップ画面から始めるとき、前回のNG履歴も残さない', async () => {
+    const user = userEvent.setup();
+    allowGeolocation();
+    // 前回 店a をNGして離脱し、猶予を過ぎてから開き直した
+    localStorage.setItem(
+      'tsugidoko:session',
+      JSON.stringify({
+        condition: DEFAULT_CONDITION,
+        relaxLevel: 0,
+        currentShop: null,
+        queue: [],
+        shownIds: ['a'],
+        nextStart: 51,
+        hasMore: false,
+        startedAt: Date.now(),
+        lastActiveAt: Date.now() - RESUME_WINDOW_MS - 1,
+      }),
+    );
+    stubSearch(response([shop('a')]));
+    render(<App />);
+
+    await search(user);
+
+    // 捨てているので、前回NGした店がまた出る
+    await waitFor(() => expect(screen.getByRole('heading', { name: '店 a' })).toBeInTheDocument());
   });
 
   it('復帰後の追加取得で現在地を取り直す', async () => {
