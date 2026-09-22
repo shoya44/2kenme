@@ -54,7 +54,12 @@ export const initialState: AppState = {
 };
 
 export type Action =
-  | { type: 'restore'; condition: SearchCondition; session: SearchSession | null }
+  | {
+      type: 'restore';
+      condition: SearchCondition;
+      /** 復元に使うのは提示状態だけ。保存時刻は storage 側の関心事 */
+      session: Omit<SearchSession, 'lastActiveAt'> | null;
+    }
   | { type: 'setCondition'; condition: SearchCondition }
   | { type: 'locating' }
   | { type: 'locationAcquired'; location: GeoPoint }
@@ -279,8 +284,15 @@ export function reducer(state: AppState, action: Action): AppState {
   }
 }
 
-/** 現在の状態から保存するセッションを作る（DATA-001 §7）。現在地は含めない。 */
-export function toSession(state: AppState, startedAt = state.startedAt ?? 0): SearchSession {
+/**
+ * 現在の状態から保存するセッションを作る（DATA-001 §7）。現在地は含めない。
+ *
+ * `lastActiveAt` は保存時に `saveSession` が打つ。
+ */
+export function toSession(
+  state: AppState,
+  startedAt = state.startedAt ?? 0,
+): Omit<SearchSession, 'lastActiveAt'> {
   return {
     condition: state.condition,
     relaxLevel: state.relaxLevel,

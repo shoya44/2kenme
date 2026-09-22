@@ -24,6 +24,7 @@ import {
   saveDefaults,
   savePasscode,
   saveSession,
+  touchSession,
 } from './services/storage';
 import { initialState, reducer, shouldPrefetch, toSession, type AppState } from './state/reducer';
 import { isLateNight, withLateNightDefault } from './utils/latenight';
@@ -66,6 +67,17 @@ export function App() {
       saveSession(toSession(state));
     }
   }, [state]);
+
+  // 画面を離れた時刻を控える。復帰までの間隔で再開の可否を決める（FE-001 §23）
+  useEffect(() => {
+    const onHidden = () => {
+      if (document.visibilityState === 'hidden') {
+        touchSession();
+      }
+    };
+    document.addEventListener('visibilitychange', onHidden);
+    return () => document.removeEventListener('visibilitychange', onHidden);
+  }, []);
 
   // 許可済みなら起動時に現在地を先出しする。初回の許可ダイアログは「さがす」まで
   // 出さない（FE-001 §21）。ユーザー操作を伴わないので失敗は黙って捨てる
