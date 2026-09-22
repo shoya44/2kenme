@@ -39,7 +39,7 @@ MVPの実装が一通り完了。デプロイは未実施。
 | 実APIでの動作確認 | **未** — HotPepper APIキーが必要 |
 | デプロイ | **未** — Cloudflareの認証情報が必要 |
 
-テスト366件（Worker 175 / F/E 191）。
+テスト389件（Worker 187 / F/E 202）。
 
 ### デプロイ手順（iPhoneだけで完結します）
 
@@ -52,7 +52,7 @@ MVPの実装が一通り完了。デプロイは未実施。
 - 表示されたトークンをコピー（**この画面を離れると二度と見られません**）
 - Workers & Pages の画面に出ている **Account ID** もコピー
 
-**2. GitHubにSecretを3つ登録する**
+**2. GitHubにSecretを4つ登録する**
 
 リポジトリ → Settings → Secrets and variables → Actions → New repository secret
 
@@ -61,6 +61,9 @@ MVPの実装が一通り完了。デプロイは未実施。
 | `CLOUDFLARE_API_TOKEN` | 手順1のトークン |
 | `CLOUDFLARE_ACCOUNT_ID` | 手順1のアカウントID |
 | `HOTPEPPER_API_KEY` | ホットペッパーのAPIキー |
+| `APP_PASSCODE` | 自分で決めた合言葉（24文字以上のランダムな文字列） |
+
+`APP_PASSCODE` は身内だけが使えるようにするための合言葉です。アプリを初めて開いたときに1回入力すると、その端末では次回から聞かれません。**未登録のままデプロイすると検索が500で失敗します**（誰でも使える状態にしないため）。変えたいときはSecretを更新して再デプロイすると、全端末で入力し直しになります。
 
 **3. 予算マスタを実データにする**
 
@@ -124,6 +127,9 @@ CIはPRとmainへのpushで同じ内容を実行する（`.github/workflows/ci.y
 | 名前 | 種別 | 用途 |
 | --- | --- | --- |
 | `HOTPEPPER_API_KEY` | Secret | HotPepper APIキー。`wrangler secret put` で登録する |
+| `APP_PASSCODE` | Secret | `/api/search` の合言葉。未設定なら500を返す |
 | `ALLOWED_ORIGIN` | Var | `/api/search` を許可するOrigin。`wrangler.jsonc` で管理する |
 
-APIキーをリポジトリへコミットしない。ローカルは `.dev.vars`、本番は Cloudflare Secret を使う。
+APIキーと合言葉をリポジトリへコミットしない。ローカルは `.dev.vars`、本番は Cloudflare Secret を使う。
+
+レート制限（IP単位・60秒30回）は `wrangler.jsonc` のバインディングで効く。Cloudflareダッシュボードでの設定は不要。

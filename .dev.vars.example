@@ -7,6 +7,11 @@
 # このファイルにも wrangler.jsonc にも実値を書かない。
 HOTPEPPER_API_KEY=your-api-key-here
 
+# 利用者を絞るための合言葉（BE-001 §5）。
+# 未設定だと /api/search は 500 を返す。本番へは GitHub Secret 経由で登録する。
+# 24文字以上のランダムな文字列にする。
+APP_PASSCODE=your-passcode-here
+
 # 任意: HotPepperのエンドポイントを差し替える（開発時のみ）。
 # 実APIへ到達できない環境で通し確認をするときに使う。未設定なら本番を叩く。
 # HOTPEPPER_ENDPOINT=http://127.0.0.1:8899/

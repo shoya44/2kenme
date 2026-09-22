@@ -205,6 +205,24 @@
   color: var(--text-tertiary);
 }
 
+/* 合言葉の入力 */
+.textInput {
+  width: 100%;
+  min-height: var(--control-min-height);
+  margin-top: 10px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-subtle);
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.textInput:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 /* 深夜帯の既定ONの注記。こだわりアコーディオンの直下に寄せる */
 .lateNightNote {
   margin: -8px var(--gutter) 0;

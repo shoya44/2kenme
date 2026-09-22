@@ -6,9 +6,12 @@ import {
   clearSession,
   DEFAULT_CONDITION,
   clearGeoGranted,
+  clearPasscode,
   GEO_TTL_MS,
   hasGeoGranted,
+  loadPasscode,
   markGeoGranted,
+  savePasscode,
   HISTORY_LIMIT,
   loadDefaults,
   loadGeo,
@@ -237,6 +240,39 @@ describe('geo', () => {
 
   it('鮮度は5分', () => {
     expect(GEO_TTL_MS).toBe(5 * 60 * 1000);
+  });
+});
+
+/** 合言葉（DATA-001 §12）。 */
+describe('passcode', () => {
+  it('保存して読み出せる', () => {
+    savePasscode('secret-value');
+
+    expect(loadPasscode()).toBe('secret-value');
+  });
+
+  it('未保存ならnull', () => {
+    expect(loadPasscode()).toBeNull();
+  });
+
+  it('空文字はnullとして扱う', () => {
+    savePasscode('');
+
+    expect(loadPasscode()).toBeNull();
+  });
+
+  it('消すとnullに戻る', () => {
+    savePasscode('secret-value');
+
+    clearPasscode();
+
+    expect(loadPasscode()).toBeNull();
+  });
+
+  it('文字列以外が入っていてもnull', () => {
+    localStorage.setItem(STORAGE_KEYS.passcode, '123');
+
+    expect(loadPasscode()).toBeNull();
   });
 });
 

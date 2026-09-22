@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from './App';
-import { GEO_TTL_MS } from './services/storage';
+import { GEO_TTL_MS, savePasscode, STORAGE_KEYS } from './services/storage';
 import type { SearchResponse, Shop } from '../shared/api-types';
 
 /**
@@ -73,10 +73,14 @@ async function search(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'さがす' }));
 }
 
+const PASSCODE = 'test-passcode';
+
 beforeEach(() => {
   localStorage.clear();
   sessionStorage.clear();
   clock.now = new Date(2026, 8, 22, 19, 0, 0);
+  // 合言葉は入力済みの端末を既定とする。入力の流れは専用のテストで見る
+  savePasscode(PASSCODE);
 });
 
 afterEach(() => {
@@ -540,6 +544,84 @@ describe('エラー', () => {
     await search(user);
 
     await waitFor(() => expect(screen.getByText('店舗を取得できませんでした')).toBeInTheDocument());
+  });
+});
+
+/** 合言葉（FE-001 §29 / BE-001 §5）。 */
+describe('合言葉', () => {
+  it('未入力なら入力画面を出し、条件設定は見せない', () => {
+    localStorage.clear();
+
+    render(<App />);
+
+    expect(screen.getByLabelText('合言葉')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'さがす' })).toBeNull();
+  });
+
+  it('入力すると保存され、次回は聞かれない', async () => {
+    const user = userEvent.setup();
+    localStorage.clear();
+    const { unmount } = render(<App />);
+
+    await user.type(screen.getByLabelText('合言葉'), PASSCODE);
+    await user.click(screen.getByRole('button', { name: 'はじめる' }));
+
+    expect(screen.getByRole('button', { name: 'さがす' })).toBeInTheDocument();
+    unmount();
+
+    render(<App />);
+    expect(screen.getByRole('button', { name: 'さがす' })).toBeInTheDocument();
+  });
+
+  it('空のままでは進めない', () => {
+    localStorage.clear();
+
+    render(<App />);
+
+    expect(screen.getByRole('button', { name: 'はじめる' })).toBeDisabled();
+  });
+
+  it('検索リクエストに合言葉を載せる', async () => {
+    const user = userEvent.setup();
+    allowGeolocation();
+    const fetchMock = stubSearch(response([shop('a')]));
+    render(<App />);
+
+    await search(user);
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    const init = fetchMock.mock.calls[0]?.[1];
+    expect((init?.headers as Record<string, string>)['X-App-Token']).toBe(PASSCODE);
+  });
+
+  it('403なら保存済みの合言葉を捨てて入力画面へ戻す', async () => {
+    const user = userEvent.setup();
+    allowGeolocation();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(new Response('{"error":"forbidden"}', { status: 403 }))),
+    );
+    render(<App />);
+
+    await search(user);
+
+    await waitFor(() => expect(screen.getByText('合言葉が違います')).toBeInTheDocument());
+    expect(localStorage.getItem(STORAGE_KEYS.passcode)).toBeNull();
+  });
+
+  it('403以外のエラーでは合言葉を捨てない', async () => {
+    const user = userEvent.setup();
+    allowGeolocation();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(new Response('{"error":"upstream"}', { status: 502 }))),
+    );
+    render(<App />);
+
+    await search(user);
+
+    await waitFor(() => expect(screen.getByText('店舗を取得できませんでした')).toBeInTheDocument());
+    expect(localStorage.getItem(STORAGE_KEYS.passcode)).not.toBeNull();
   });
 });
 

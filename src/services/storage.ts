@@ -7,6 +7,7 @@ const KEYS = {
   session: 'tsugidoko:session',
   geo: 'tsugidoko:geo',
   geoGranted: 'tsugidoko:geo-granted',
+  passcode: 'tsugidoko:passcode',
 } as const;
 
 /** セッションの有効期限。iOSのPWAは破棄されやすいためTTL付きlocalStorageに置く（DATA-001 §2）。 */
@@ -227,6 +228,27 @@ export function saveGeo(point: GeoPoint): void {
 
 export function clearGeo(): void {
   remove('session', KEYS.geo);
+}
+
+/* ---------------- passcode ---------------- */
+
+/**
+ * `/api/search` の合言葉（DATA-001 §12）。
+ *
+ * 毎回入力させないため localStorage に置く。端末に平文で残る共有秘密であり、
+ * 秘密の強度は「その端末を使える人」までしか担保しない。
+ */
+export function loadPasscode(): string | null {
+  const stored = read<unknown>('local', KEYS.passcode);
+  return typeof stored === 'string' && stored.length > 0 ? stored : null;
+}
+
+export function savePasscode(passcode: string): void {
+  write('local', KEYS.passcode, passcode);
+}
+
+export function clearPasscode(): void {
+  remove('local', KEYS.passcode);
 }
 
 /* ---------------- geo permission ---------------- */
