@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from './App';
+import { GEO_TTL_MS } from './services/storage';
 import type { SearchResponse, Shop } from '../shared/api-types';
 
 /**
@@ -311,6 +312,22 @@ describe('検索', () => {
     expect(screen.queryByText('予算情報なし')).toBeNull();
   });
 
+  it('鮮度切れの現在地は使わず、取り直す', async () => {
+    const user = userEvent.setup();
+    const getCurrentPosition = allowGeolocation();
+    stubSearch(response([shop('a')]));
+    // 前回の検索で取得した現在地が鮮度切れになっている状況
+    sessionStorage.setItem(
+      'tsugidoko:geo',
+      JSON.stringify({ lat: 35.0, lng: 139.0, acquiredAt: Date.now() - GEO_TTL_MS - 1 }),
+    );
+    render(<App />);
+
+    await search(user);
+
+    await waitFor(() => expect(getCurrentPosition).toHaveBeenCalledTimes(1));
+  });
+
   it('現在地は「さがす」押下時に取得する', async () => {
     const user = userEvent.setup();
     const getCurrentPosition = allowGeolocation();
@@ -523,6 +540,52 @@ describe('エラー', () => {
     await search(user);
 
     await waitFor(() => expect(screen.getByText('店舗を取得できませんでした')).toBeInTheDocument());
+  });
+});
+
+/** 起動時の現在地取得（FE-001 §21）。 */
+describe('現在地の先出し', () => {
+  it('許可実績があれば起動時に取得する', async () => {
+    const getCurrentPosition = allowGeolocation();
+    localStorage.setItem('tsugidoko:geo-granted', 'true');
+
+    render(<App />);
+
+    await waitFor(() => expect(getCurrentPosition).toHaveBeenCalledTimes(1));
+  });
+
+  it('許可実績が無ければ起動時に取得しない', async () => {
+    const getCurrentPosition = allowGeolocation();
+
+    render(<App />);
+
+    // 先出しは非同期。1フレーム待っても呼ばれないことを見る
+    await waitFor(() => expect(screen.getByRole('button', { name: 'さがす' })).toBeEnabled());
+    expect(getCurrentPosition).not.toHaveBeenCalled();
+  });
+
+  it('起動時の取得に失敗してもエラーを表示しない', async () => {
+    const getCurrentPosition = denyGeolocation();
+    localStorage.setItem('tsugidoko:geo-granted', 'true');
+
+    render(<App />);
+
+    await waitFor(() => expect(getCurrentPosition).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText('現在地を取得できませんでした')).toBeNull();
+  });
+
+  it('先出しできていれば「さがす」で取得し直さない', async () => {
+    const user = userEvent.setup();
+    const getCurrentPosition = allowGeolocation();
+    localStorage.setItem('tsugidoko:geo-granted', 'true');
+    stubSearch(response([shop('a')]));
+    render(<App />);
+    await waitFor(() => expect(getCurrentPosition).toHaveBeenCalledTimes(1));
+
+    await search(user);
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: '店 a' })).toBeInTheDocument());
+    expect(getCurrentPosition).toHaveBeenCalledTimes(1);
   });
 });
 

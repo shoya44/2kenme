@@ -5,7 +5,10 @@ import {
   clearHistory,
   clearSession,
   DEFAULT_CONDITION,
+  clearGeoGranted,
   GEO_TTL_MS,
+  hasGeoGranted,
+  markGeoGranted,
   HISTORY_LIMIT,
   loadDefaults,
   loadGeo,
@@ -230,6 +233,32 @@ describe('geo', () => {
 
     expect(loadGeo(point.acquiredAt + GEO_TTL_MS + 1)).toBeNull();
     expect(sessionStorage.getItem(STORAGE_KEYS.geo)).toBeNull();
+  });
+
+  it('鮮度は5分', () => {
+    expect(GEO_TTL_MS).toBe(5 * 60 * 1000);
+  });
+});
+
+/** 位置情報の許可実績（DATA-001 §6）。 */
+describe('geo-granted', () => {
+  it('既定では実績なし', () => {
+    expect(hasGeoGranted()).toBe(false);
+  });
+
+  it('記録すると残り、消すと戻る', () => {
+    markGeoGranted();
+    expect(hasGeoGranted()).toBe(true);
+
+    clearGeoGranted();
+    expect(hasGeoGranted()).toBe(false);
+  });
+
+  it('座標は残さない', () => {
+    markGeoGranted();
+
+    expect(localStorage.getItem(STORAGE_KEYS.geoGranted)).toBe('true');
+    expect(localStorage.getItem(STORAGE_KEYS.geo)).toBeNull();
   });
 });
 

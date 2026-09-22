@@ -8,7 +8,7 @@ import styles from './components/ui.module.css';
 import { ResultScreen } from './screens/ResultScreen';
 import { SearchScreen } from './screens/SearchScreen';
 import { fetchShops } from './services/api';
-import { getCurrentLocation } from './services/location';
+import { canPrimeLocation, getCurrentLocation, isGeoFresh } from './services/location';
 import {
   addHistory,
   clearDefaults,
@@ -48,6 +48,21 @@ export function App() {
     }
   }, [state]);
 
+  // 許可済みなら起動時に現在地を先出しする。初回の許可ダイアログは「さがす」まで
+  // 出さない（FE-001 §21）。ユーザー操作を伴わないので失敗は黙って捨てる
+  useEffect(() => {
+    void (async () => {
+      if (!(await canPrimeLocation())) {
+        return;
+      }
+      try {
+        dispatch({ type: 'locationAcquired', location: await getCurrentLocation() });
+      } catch {
+        // 何もしない。「さがす」で取り直す
+      }
+    })();
+  }, []);
+
   const runSearch = useCallback(
     async (condition: SearchCondition, relaxLevel: RelaxLevel, keepShown = false) => {
       const startedAt = Date.now();
@@ -55,7 +70,8 @@ export function App() {
       saveDefaults(condition);
       clearSession();
 
-      let location = state.location;
+      // 鮮度切れの現在地は使わない。移動したあとの検索で古い地点を使わないため
+      let location = isGeoFresh(state.location) ? state.location : null;
       if (!location) {
         dispatch({ type: 'locating' });
         try {
@@ -89,7 +105,7 @@ export function App() {
       return;
     }
 
-    const cached = state.location;
+    const cached = isGeoFresh(state.location) ? state.location : null;
     const condition = applyRelax(state.condition, state.relaxLevel);
     const start = state.nextStart;
     const startedAt = state.startedAt ?? 0;
@@ -101,7 +117,7 @@ export function App() {
     void (async () => {
       let location = cached;
       if (!location) {
-        // セッション復帰直後は現在地を持っていない。ここで取り直す（FE-001 §23）
+        // セッション復帰直後・鮮度切れでは現在地を持っていない。取り直す（FE-001 §23）
         try {
           location = await getCurrentLocation();
           dispatch({ type: 'locationAcquired', location });
