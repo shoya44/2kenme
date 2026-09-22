@@ -6,13 +6,19 @@ const KEYS = {
   history: 'tsugidoko:history',
   session: 'tsugidoko:session',
   geo: 'tsugidoko:geo',
+  geoGranted: 'tsugidoko:geo-granted',
 } as const;
 
 /** セッションの有効期限。iOSのPWAは破棄されやすいためTTL付きlocalStorageに置く（DATA-001 §2）。 */
 export const SESSION_TTL_MS = 2 * 60 * 60 * 1000;
 
-/** 現在地の鮮度。これを過ぎたら取り直す（DATA-001 §6）。 */
-export const GEO_TTL_MS = 30 * 60 * 1000;
+/**
+ * 現在地の鮮度。これを過ぎたら取り直す（DATA-001 §6）。
+ *
+ * 1軒目から2軒目へ歩く用途なので、数百m動いたあとの検索で古い地点を
+ * 使わない長さにする。同じ地点での連続検索は取得し直さない長さでもある。
+ */
+export const GEO_TTL_MS = 5 * 60 * 1000;
 
 /** 履歴の保持件数（DATA-001 §11）。 */
 export const HISTORY_LIMIT = 20;
@@ -221,6 +227,27 @@ export function saveGeo(point: GeoPoint): void {
 
 export function clearGeo(): void {
   remove('session', KEYS.geo);
+}
+
+/* ---------------- geo permission ---------------- */
+
+/**
+ * 位置情報の取得に一度成功したことを覚える（DATA-001 §6）。
+ *
+ * 座標は残さない。「許可が済んでいる」という事実だけを残し、次回起動時に
+ * 許可ダイアログを出さずに取得を先出しできるかの判断に使う。
+ * Safari は Permissions API で geolocation を照会できないため、この実績で代える。
+ */
+export function markGeoGranted(): void {
+  write('local', KEYS.geoGranted, true);
+}
+
+export function hasGeoGranted(): boolean {
+  return read<unknown>('local', KEYS.geoGranted) === true;
+}
+
+export function clearGeoGranted(): void {
+  remove('local', KEYS.geoGranted);
 }
 
 export const STORAGE_KEYS = KEYS;
