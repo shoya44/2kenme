@@ -1,10 +1,5 @@
 import { HttpError, json } from './http';
-import {
-  assertHotPepperSuccess,
-  buildHotPepperParams,
-  fetchHotPepper,
-  UpstreamError,
-} from './hotpepper';
+import { assertHotPepperSuccess, buildHotPepperParams, fetchHotPepper } from './hotpepper';
 import { isWithinBudgetMax } from './budget';
 import { NEAR_EXCLUSION_METERS } from './geo';
 import { mapPaging, mapShop, shopDistanceMeters } from './mapper';
@@ -24,7 +19,7 @@ export async function handleSearch(request: Request, env: WorkerEnv): Promise<Re
   try {
     body = await request.json();
   } catch {
-    return json({ error: 'invalid body' }, 400);
+    throw new HttpError(400, 'invalid body');
   }
 
   const searchRequest = validateSearchRequest(body);
@@ -76,5 +71,3 @@ export async function handleSearch(request: Request, env: WorkerEnv): Promise<Re
   // HotPepperの返却順（おすすめ順）を保持する。シャッフルはF/Eが行う
   return json({ shops, paging: mapPaging(upstream) } satisfies SearchResponse);
 }
-
-export { UpstreamError };

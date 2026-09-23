@@ -38,7 +38,7 @@ export function NoCandidate({ condition, relaxCta, onRelax }: Props) {
       </p>
 
       {relaxCta && (
-        <button type="button" className={styles.relaxCta} onClick={onRelax}>
+        <button type="button" className={styles.secondaryCta} onClick={onRelax}>
           {relaxCta}
         </button>
       )}

@@ -38,6 +38,7 @@ export function PasscodeScreen({ rejected, onSubmit }: Props) {
           type="password"
           value={value}
           autoComplete="current-password"
+          enterKeyHint="go"
           autoCapitalize="off"
           spellCheck={false}
           onChange={(e) => setValue(e.currentTarget.value)}
@@ -53,7 +54,7 @@ export function PasscodeScreen({ rejected, onSubmit }: Props) {
         </div>
       )}
 
-      <div className={styles.ctaWrap} style={{ marginTop: 'auto' }}>
+      <div className={`${styles.ctaWrap} ${styles.pushDown}`}>
         <button type="submit" className={styles.cta} disabled={trimmed.length === 0}>
           はじめる
         </button>

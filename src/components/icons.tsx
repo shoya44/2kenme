@@ -93,6 +93,15 @@ export function CheckIcon({ size = 20 }: { size?: number }) {
   );
 }
 
+export function ShareIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg {...base} width={size} height={size} viewBox="0 0 24 24">
+      <path d="M12 3v12M7.5 7.5 12 3l4.5 4.5" />
+      <path d="M5 12v6.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V12" />
+    </svg>
+  );
+}
+
 export function SearchOffIcon({ size = 28 }: { size?: number }) {
   return (
     <svg {...base} width={size} height={size} viewBox="0 0 24 24" strokeWidth={1.6}>

@@ -1,3 +1,4 @@
+import { PREFERENCE_KEYS, type PreferenceKey } from '../shared/api-types';
 import type { BudgetMax, GenreCode, RangeCode, SearchCondition } from './types';
 
 /** 予算は上限指定（REQ-001 §6.1 / FE-001 §5）。 */
@@ -43,11 +44,11 @@ export const RANGE_OPTIONS: readonly RangeOption[] = [
   { value: 4, label: '2km' },
 ];
 
-export const PREFERENCE_LABELS = {
+export const PREFERENCE_LABELS: Record<PreferenceKey, string> = {
   privateRoom: '個室',
   freeDrink: '飲み放題',
   midnight: '23時以降営業',
-} as const;
+};
 
 export function budgetLabel(max: BudgetMax): string {
   return BUDGET_OPTIONS.find((o) => o.max === max)?.label ?? '指定なし';
@@ -67,9 +68,7 @@ export function genreLabel(code: GenreCode): string {
  * 緩和で条件が変わったとき、何で検索しているのかを画面で示すため。
  */
 export function describeCondition(condition: SearchCondition): string {
-  const prefs = (Object.keys(PREFERENCE_LABELS) as (keyof typeof PREFERENCE_LABELS)[]).filter(
-    (key) => condition.preferences[key],
-  );
+  const prefs = PREFERENCE_KEYS.filter((key) => condition.preferences[key]);
 
   return [
     condition.budgetMax === null ? '予算 指定なし' : budgetLabel(condition.budgetMax),
