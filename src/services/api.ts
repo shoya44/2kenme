@@ -1,4 +1,4 @@
-import type { SearchRequest, SearchResponse } from '../../shared/api-types';
+import { APP_TOKEN_HEADER, type SearchRequest, type SearchResponse } from '../../shared/api-types';
 import type { GeoPoint, SearchCondition } from '../types';
 
 /** /api/search の呼び出しに失敗したことを示す。 */
@@ -9,16 +9,12 @@ export class SearchApiError extends Error {
   }
 }
 
-/** 合言葉を載せるヘッダ（BE-001 §5）。 */
-const APP_TOKEN_HEADER = 'X-App-Token';
-
 /** 条件・現在地・ページング開始位置から店舗候補を取得する（FE-001 §18）。 */
 export async function fetchShops(
   condition: SearchCondition,
   location: GeoPoint,
   start: number,
   passcode: string | null,
-  signal?: AbortSignal,
 ): Promise<SearchResponse> {
   const body: SearchRequest = {
     lat: location.lat,
@@ -40,7 +36,6 @@ export async function fetchShops(
     method: 'POST',
     headers,
     body: JSON.stringify(body),
-    ...(signal ? { signal } : {}),
   });
 
   if (!response.ok) {

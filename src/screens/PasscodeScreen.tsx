@@ -53,7 +53,7 @@ export function PasscodeScreen({ rejected, onSubmit }: Props) {
         </div>
       )}
 
-      <div className={styles.ctaWrap} style={{ marginTop: 'auto' }}>
+      <div className={`${styles.ctaWrap} ${styles.pushDown}`}>
         <button type="submit" className={styles.cta} disabled={trimmed.length === 0}>
           はじめる
         </button>

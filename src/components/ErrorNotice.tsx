@@ -15,7 +15,7 @@ export function ErrorNotice({ kind, onRetry }: Props) {
   return (
     <div className={styles.error} role="alert">
       <p className={styles.errorText}>{MESSAGES[kind]}</p>
-      <button type="button" className={styles.relaxCta} onClick={onRetry}>
+      <button type="button" className={styles.secondaryCta} onClick={onRetry}>
         再試行
       </button>
     </div>

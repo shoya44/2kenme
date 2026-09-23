@@ -76,6 +76,20 @@ describe('defaults', () => {
     expect(loadDefaults()).toEqual(DEFAULT_CONDITION);
   });
 
+  it('選択肢に無いジャンル・予算が保存されていれば初期値へ戻す（400ループを防ぐ）', () => {
+    localStorage.setItem(
+      'tsugidoko:defaults',
+      JSON.stringify({ ...DEFAULT_CONDITION, genreCode: 'G999' }),
+    );
+    expect(loadDefaults()).toEqual(DEFAULT_CONDITION);
+
+    localStorage.setItem(
+      'tsugidoko:defaults',
+      JSON.stringify({ ...DEFAULT_CONDITION, budgetMax: 3500 }),
+    );
+    expect(loadDefaults()).toEqual(DEFAULT_CONDITION);
+  });
+
   it('保存した条件を復元する', () => {
     saveDefaults(condition);
 

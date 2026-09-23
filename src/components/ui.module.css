@@ -313,8 +313,12 @@
 }
 
 .ctaWrap {
-  margin-top: auto;
   padding: 8px var(--gutter) 0;
+}
+
+/* 本文の残り高さを吸って、以降の要素を画面下端へ寄せる */
+.pushDown {
+  margin-top: auto;
 }
 
 .scopeCta {
@@ -383,7 +387,6 @@
 }
 
 .shopUrl {
-  color: var(--text-secondary);
   display: inline-flex;
   align-items: center;
   gap: 9px;
@@ -499,7 +502,12 @@
 
 /* ---- スケルトン ---- */
 .skeleton {
-  background: linear-gradient(90deg, var(--surface) 25%, #23242a 50%, var(--surface) 75%);
+  background: linear-gradient(
+    90deg,
+    var(--surface) 25%,
+    var(--surface-highlight) 50%,
+    var(--surface) 75%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
   border-radius: 8px;
@@ -559,7 +567,8 @@
   margin: 0;
 }
 
-.relaxCta {
+/* 差し色の枠線だけの副CTA。緩和・再試行で使う */
+.secondaryCta {
   margin-top: 22px;
   width: 100%;
   min-height: 56px;
@@ -588,7 +597,7 @@
   bottom: 0;
   max-height: 80dvh;
   overflow-y: auto;
-  background: #1c1d20;
+  background: var(--surface-raised);
   border-radius: 24px 24px 0 0;
   padding-bottom: calc(10px + var(--safe-bottom));
   max-width: 480px;

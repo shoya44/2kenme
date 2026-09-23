@@ -3,6 +3,7 @@ import {
   BUDGET_MAX_OPTIONS,
   GENRE_CODES,
   MAX_START,
+  PREFERENCE_KEYS,
   type BudgetMax,
   type GenreCode,
   type Preferences,
@@ -29,17 +30,15 @@ function assertPreferences(value: unknown): Preferences {
   if (!isRecord(value)) {
     bad('invalid preferences');
   }
-  const keys = ['privateRoom', 'freeDrink', 'midnight'] as const;
-  for (const key of keys) {
-    if (typeof value[key] !== 'boolean') {
+  const preferences = {} as Preferences;
+  for (const key of PREFERENCE_KEYS) {
+    const flag = value[key];
+    if (typeof flag !== 'boolean') {
       bad(`invalid preferences.${key}`);
     }
+    preferences[key] = flag;
   }
-  return {
-    privateRoom: value.privateRoom as boolean,
-    freeDrink: value.freeDrink as boolean,
-    midnight: value.midnight as boolean,
-  };
+  return preferences;
 }
 
 function assertBoolean(value: unknown, field: string): boolean {

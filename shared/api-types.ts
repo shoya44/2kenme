@@ -28,12 +28,16 @@ export const MAX_START = 201;
 /** 検索範囲。1=300m / 2=500m / 3=1km / 4=2km（FE-001 §8） */
 export type RangeCode = 1 | 2 | 3 | 4;
 
+/** こだわり条件のキー（REQ-001 §6.3）。UIの並び順と入力検証で共有する */
+export const PREFERENCE_KEYS = ['privateRoom', 'freeDrink', 'midnight'] as const;
+
+export type PreferenceKey = (typeof PREFERENCE_KEYS)[number];
+
 /** こだわり条件（REQ-001 §6.3） */
-export interface Preferences {
-  privateRoom: boolean;
-  freeDrink: boolean;
-  midnight: boolean;
-}
+export type Preferences = Record<PreferenceKey, boolean>;
+
+/** 合言葉を載せるリクエストヘッダ（BE-001 §5） */
+export const APP_TOKEN_HEADER = 'X-App-Token';
 
 export interface SearchRequest {
   lat: number;

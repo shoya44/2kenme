@@ -1,3 +1,4 @@
+import { BUDGET_MAX_OPTIONS, GENRE_CODES } from '../../shared/api-types';
 import type { RelaxLevel } from '../utils/relax';
 import type { GeoPoint, HistoryEntry, SearchCondition, Shop } from '../types';
 
@@ -119,18 +120,23 @@ function remove(kind: 'local' | 'session', key: string): void {
 
 /* ---------------- defaults ---------------- */
 
+/**
+ * 保存された条件が今のアプリで使える値か。
+ *
+ * 旧バージョンが書いた選択肢外の値（廃止したジャンル等）をそのまま送ると
+ * Worker が 400 を返し、「店舗を取得できませんでした」から抜け出せなくなる。
+ * 許可値と照合し、外れていれば初期値へ戻す（DATA-001 §17）。
+ */
 function isValidCondition(value: unknown): value is SearchCondition {
   if (typeof value !== 'object' || value === null) {
     return false;
   }
   const c = value as Partial<SearchCondition>;
   return (
-    (c.budgetMax === null || typeof c.budgetMax === 'number') &&
+    (c.budgetMax === null || (BUDGET_MAX_OPTIONS as readonly unknown[]).includes(c.budgetMax)) &&
     (c.includeUnknownBudget === undefined || typeof c.includeUnknownBudget === 'boolean') &&
-    (c.genreCode === null || typeof c.genreCode === 'string') &&
-    typeof c.range === 'number' &&
-    c.range >= 1 &&
-    c.range <= 4 &&
+    (c.genreCode === null || (GENRE_CODES as readonly unknown[]).includes(c.genreCode)) &&
+    (c.range === 1 || c.range === 2 || c.range === 3 || c.range === 4) &&
     typeof c.preferences === 'object' &&
     c.preferences !== null
   );

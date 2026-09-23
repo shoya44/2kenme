@@ -26,7 +26,7 @@ import {
   saveSession,
   touchSession,
 } from './services/storage';
-import { initialState, reducer, shouldPrefetch, toSession, type AppState } from './state/reducer';
+import { initialState, reducer, shouldPrefetch, toSession } from './state/reducer';
 import { isLateNight, withLateNightDefault } from './utils/latenight';
 import { applyRelax, nextRelaxLevel, RELAX_LABELS, type RelaxLevel } from './utils/relax';
 import type { HistoryEntry, SearchCondition } from './types';
@@ -157,8 +157,7 @@ export function App() {
           location = await getCurrentLocation();
           dispatch({ type: 'locationAcquired', location });
         } catch {
-          dispatch({ type: 'prefetchFailed', startedAt });
-          dispatch({ type: 'failed', kind: 'location' });
+          dispatch({ type: 'prefetchFailed', startedAt, kind: 'location' });
           return;
         }
       }
@@ -288,5 +287,3 @@ export function App() {
     </div>
   );
 }
-
-export type { AppState };

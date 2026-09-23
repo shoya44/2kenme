@@ -29,6 +29,12 @@ export interface AppState {
   locating: boolean;
   /** 先読み中。同時に1つまで */
   prefetching: boolean;
+  /**
+   * 先読みが失敗して止まっている。次のNG（ユーザー操作）まで再開しない。
+   * これが無いと、失敗 → prefetching が戻る → 条件を満たす → 即再試行 の
+   * ループになり、通信が切れている間に上流を叩き続ける
+   */
+  prefetchPaused: boolean;
   noCandidate: boolean;
   error: ErrorKind | null;
   /** セッションの開始時刻。TTL判定の基準。復元時は保存された値を引き継ぐ */
@@ -48,6 +54,7 @@ export const initialState: AppState = {
   loading: false,
   locating: false,
   prefetching: false,
+  prefetchPaused: false,
   noCandidate: false,
   error: null,
   startedAt: null,
@@ -87,7 +94,12 @@ export type Action =
       hasMore: boolean;
       startedAt: number;
     }
-  | { type: 'prefetchFailed'; startedAt: number }
+  | {
+      type: 'prefetchFailed';
+      startedAt: number;
+      /** 失敗の種類。手元に候補が無いときだけ画面に出す。省略時は通信失敗 */
+      kind?: ErrorKind;
+    }
   | { type: 'failed'; kind: ErrorKind }
   | { type: 'backToSearch' };
 
@@ -114,7 +126,12 @@ export function mergeUniqueShops(state: AppState, incoming: readonly Shop[]): Sh
 
 /** 先読みすべきか（FE-001 §19）。 */
 export function shouldPrefetch(state: AppState): boolean {
-  return state.queue.length <= PREFETCH_THRESHOLD && state.hasMore && !state.prefetching;
+  return (
+    state.queue.length <= PREFETCH_THRESHOLD &&
+    state.hasMore &&
+    !state.prefetching &&
+    !state.prefetchPaused
+  );
 }
 
 export function reducer(state: AppState, action: Action): AppState {
@@ -158,6 +175,7 @@ export function reducer(state: AppState, action: Action): AppState {
         loading: true,
         error: null,
         noCandidate: false,
+        prefetchPaused: false,
         currentShop: null,
         queue: [],
         shownIds: action.keepShown ? state.shownIds : [],
@@ -205,19 +223,20 @@ export function reducer(state: AppState, action: Action): AppState {
       }
       const shownIds = [...state.shownIds, state.currentShop.id];
       const [next, ...rest] = state.queue;
+      // ユーザー操作を機に、止まっていた先読みを再開してよい
+      const resumed = { ...state, shownIds, prefetchPaused: false };
 
       if (!next) {
         // 手元に候補がない。先読み中なら待ち、そうでなければ候補切れ
         return {
-          ...state,
+          ...resumed,
           currentShop: null,
           queue: [],
-          shownIds,
           noCandidate: !state.hasMore && !state.prefetching,
         };
       }
 
-      return { ...state, currentShop: next, queue: rest, shownIds };
+      return { ...resumed, currentShop: next, queue: rest };
     }
 
     case 'prefetchStarted':
@@ -266,11 +285,13 @@ export function reducer(state: AppState, action: Action): AppState {
       if (action.startedAt !== state.startedAt) {
         return state;
       }
-      // 既存候補があれば継続する（BAS-001 §14）
+      // 既存候補があれば継続し、画面には出さない（BAS-001 §14）。
+      // 次のNGまで自動では再試行しない（無限ループ防止）
       return {
         ...state,
         prefetching: false,
-        ...(state.currentShop ? {} : { error: 'network' as const }),
+        prefetchPaused: true,
+        ...(state.currentShop ? {} : { error: action.kind ?? 'network' }),
       };
 
     case 'failed':

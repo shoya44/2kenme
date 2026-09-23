@@ -240,6 +240,48 @@ describe('先読み', () => {
 
     expect(after.error).toBe('network');
   });
+
+  it('失敗したら次のNGまで先読みを止める（失敗 → 即再試行のループにしない）', () => {
+    const before = { ...searched(3, true), prefetching: true };
+
+    const after = reducer(before, { type: 'prefetchFailed', startedAt: 1 });
+
+    expect(after.prefetching).toBe(false);
+    expect(shouldPrefetch(after)).toBe(false);
+  });
+
+  it('NGすると止めていた先読みを再開する', () => {
+    const paused = reducer(
+      { ...searched(3, true), prefetching: true },
+      {
+        type: 'prefetchFailed',
+        startedAt: 1,
+      },
+    );
+
+    const after = reducer(paused, { type: 'ng' });
+
+    expect(shouldPrefetch(after)).toBe(true);
+  });
+
+  it('現在地の取得に失敗しても、表示中の店は消さない', () => {
+    const before = { ...searched(3, true), prefetching: true };
+
+    const after = reducer(before, { type: 'prefetchFailed', startedAt: 1, kind: 'location' });
+
+    expect(after.error).toBeNull();
+    expect(after.currentShop).not.toBeNull();
+  });
+
+  it('現在地の取得に失敗して手元に候補が無ければ、位置情報のエラーにする', () => {
+    let state = searched(1, true);
+    state = reducer(state, { type: 'prefetchStarted' });
+    state = reducer(state, { type: 'ng' });
+
+    const after = reducer(state, { type: 'prefetchFailed', startedAt: 1, kind: 'location' });
+
+    expect(after.error).toBe('location');
+  });
 });
 
 describe('mergeUniqueShops', () => {

@@ -41,7 +41,7 @@ export default tseslint.config(
 
   // ビルド・生成スクリプト
   {
-    files: ['*.config.{js,ts}', 'scripts/**/*.ts'],
+    files: ['*.config.{js,ts}', 'scripts/**/*.ts', 'tests/**/*.ts'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     languageOptions: {
       ecmaVersion: 2022,

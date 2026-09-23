@@ -75,12 +75,12 @@ export function SearchScreen({
       {error && <ErrorNotice kind={error} onRetry={onRetry} />}
 
       {/* 検索前に探索の中心を示す（FE-001 §22） */}
-      <p className={styles.scopeCta} style={{ marginTop: 'auto' }}>
+      <p className={`${styles.scopeCta} ${styles.pushDown}`}>
         <PinIcon size={14} />
         現在地から半径{rangeLabel(condition.range)}以内でさがします
       </p>
 
-      <div className={styles.ctaWrap} style={{ marginTop: 0 }}>
+      <div className={styles.ctaWrap}>
         <button type="button" className={styles.cta} onClick={onSearch} disabled={busy}>
           {actionLabel}
         </button>

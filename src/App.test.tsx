@@ -907,7 +907,7 @@ describe('セッション復帰', () => {
   it('復帰後に現在地を取得できなければエラーを出す（無限ローディングにしない）', async () => {
     const user = userEvent.setup();
     seedSession([shop('a')], true);
-    denyGeolocation();
+    const getCurrentPosition = denyGeolocation();
     stubSearch(response([shop('b')], false));
     render(<App />);
 
@@ -916,6 +916,47 @@ describe('セッション復帰', () => {
     await waitFor(() =>
       expect(screen.getByText('現在地を取得できませんでした')).toBeInTheDocument(),
     );
+    // 復帰直後の先読みとNG後の先読みで1回ずつ。失敗 → 即再試行 は繰り返さない
+    const calls = getCurrentPosition.mock.calls.length;
+    await new Promise((r) => setTimeout(r, 100));
+    expect(getCurrentPosition).toHaveBeenCalledTimes(calls);
+    expect(calls).toBeLessThanOrEqual(2);
+  });
+
+  it('先読みに失敗しても、表示中の店を残したまま再試行を繰り返さない', async () => {
+    seedSession([shop('a'), shop('b')], true);
+    sessionStorage.setItem(
+      'tsugidoko:geo',
+      JSON.stringify({ lat: 35.69, lng: 139.7, acquiredAt: Date.now() }),
+    );
+    const fetchMock = vi.fn(() => Promise.reject(new Error('offline')));
+    vi.stubGlobal('fetch', fetchMock);
+    render(<App />);
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 100));
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('heading', { name: '店 a' })).toBeInTheDocument();
+    expect(screen.queryByText('店舗を取得できませんでした')).toBeNull();
+  });
+
+  it('先読みの失敗後、NGすると改めて先読みを試みる', async () => {
+    const user = userEvent.setup();
+    seedSession([shop('a'), shop('b')], true);
+    sessionStorage.setItem(
+      'tsugidoko:geo',
+      JSON.stringify({ lat: 35.69, lng: 139.7, acquiredAt: Date.now() }),
+    );
+    const fetchMock = vi.fn(() => Promise.reject(new Error('offline')));
+    vi.stubGlobal('fetch', fetchMock);
+    render(<App />);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+
+    await user.click(screen.getByRole('button', { name: /NG/ }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(screen.getByRole('heading', { name: '店 b' })).toBeInTheDocument();
   });
 });
 
