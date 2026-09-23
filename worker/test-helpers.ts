@@ -1,7 +1,7 @@
 import { vi } from 'vitest';
 
 import type { HotPepperResponse, HotPepperShop } from './hotpepper';
-import { APP_TOKEN_HEADER, type SearchRequest } from '../shared/api-types';
+import type { SearchRequest } from '../shared/api-types';
 
 export const ALLOWED_ORIGIN = 'https://tsugidoko.example.com';
 
@@ -37,7 +37,7 @@ export function searchRequest(
     headers.set('Origin', origin);
   }
   if (passcode !== null) {
-    headers.set(APP_TOKEN_HEADER, passcode);
+    headers.set('X-App-Token', passcode);
   }
 
   return new Request(`${ALLOWED_ORIGIN}/api/search`, {

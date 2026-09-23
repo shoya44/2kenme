@@ -26,7 +26,7 @@ import {
   saveSession,
   touchSession,
 } from './services/storage';
-import { initialState, reducer, shouldPrefetch, toSession } from './state/reducer';
+import { initialState, reducer, shouldPrefetch, toSession, type AppState } from './state/reducer';
 import { isLateNight, withLateNightDefault } from './utils/latenight';
 import { applyRelax, nextRelaxLevel, RELAX_LABELS, type RelaxLevel } from './utils/relax';
 import type { HistoryEntry, SearchCondition } from './types';
@@ -67,20 +67,6 @@ export function App() {
       saveSession(toSession(state));
     }
   }, [state]);
-
-  // 画面が変わったら先頭から見せる。トップ画面は縦に長く、下端の「さがす」を
-  // 押した時点のスクロール位置が結果画面に持ち越されて途中から見えてしまう
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [state.screen]);
-
-  // 次候補の写真を先に取っておく。NGの直後に写真が遅れて出るのを避ける（FE-001 §20）
-  useEffect(() => {
-    const next = state.queue[0]?.photoUrl;
-    if (next) {
-      new Image().src = next;
-    }
-  }, [state.queue]);
 
   // 画面を離れた時刻を控える。復帰までの間隔で再開の可否を決める（FE-001 §23）
   useEffect(() => {
@@ -171,7 +157,8 @@ export function App() {
           location = await getCurrentLocation();
           dispatch({ type: 'locationAcquired', location });
         } catch {
-          dispatch({ type: 'prefetchFailed', startedAt, kind: 'location' });
+          dispatch({ type: 'prefetchFailed', startedAt });
+          dispatch({ type: 'failed', kind: 'location' });
           return;
         }
       }
@@ -301,3 +288,5 @@ export function App() {
     </div>
   );
 }
+
+export type { AppState };

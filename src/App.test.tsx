@@ -421,92 +421,6 @@ describe('検索', () => {
   });
 });
 
-/** iPhoneでの体感（FE-001 §20, §33）。 */
-describe('結果画面の体感', () => {
-  it('結果画面へ移るとスクロール位置を先頭へ戻す', async () => {
-    const user = userEvent.setup();
-    allowGeolocation();
-    stubSearch(response([shop('a')]));
-    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
-    render(<App />);
-    scrollTo.mockClear();
-
-    await search(user);
-
-    await waitFor(() => expect(screen.getByRole('heading', { name: '店 a' })).toBeInTheDocument());
-    expect(scrollTo).toHaveBeenCalledWith(0, 0);
-  });
-
-  it('次候補の写真を先読みする', async () => {
-    const user = userEvent.setup();
-    allowGeolocation();
-    stubSearch(
-      response([
-        shop('a', { photoUrl: 'https://example.com/a.jpg' }),
-        shop('b', { photoUrl: 'https://example.com/b.jpg' }),
-      ]),
-    );
-    const loaded: string[] = [];
-    class FakeImage {
-      set src(value: string) {
-        loaded.push(value);
-      }
-    }
-    vi.stubGlobal('Image', FakeImage);
-    render(<App />);
-
-    await search(user);
-
-    await waitFor(() => expect(screen.getByRole('heading', { level: 2 })).toBeInTheDocument());
-    // 表示中の店は img 要素で読むので、先読みするのは queue 先頭の1枚
-    const shown = screen.getByRole('heading', { level: 2 }).textContent;
-    const nextPhoto = shown === '店 a' ? 'https://example.com/b.jpg' : 'https://example.com/a.jpg';
-    expect(loaded).toEqual([nextPhoto]);
-  });
-
-  it('表示中の写真は遅延読み込みしない', async () => {
-    const user = userEvent.setup();
-    allowGeolocation();
-    stubSearch(response([shop('a', { photoUrl: 'https://example.com/a.jpg' })]));
-    render(<App />);
-
-    await search(user);
-
-    await waitFor(() => expect(screen.getByRole('heading', { name: '店 a' })).toBeInTheDocument());
-    const img = document.querySelector('img');
-    expect(img).toHaveAttribute('src', 'https://example.com/a.jpg');
-    expect(img).not.toHaveAttribute('loading', 'lazy');
-  });
-
-  it('共有できる端末では、店名とURLを共有シートへ渡す', async () => {
-    const user = userEvent.setup();
-    allowGeolocation();
-    stubSearch(response([shop('a')]));
-    const share = vi.fn(() => Promise.resolve());
-    vi.stubGlobal('navigator', { ...navigator, share });
-    render(<App />);
-    await search(user);
-    await waitFor(() => expect(screen.getByRole('heading', { name: '店 a' })).toBeInTheDocument());
-
-    await user.click(screen.getByRole('button', { name: 'みんなに共有' }));
-
-    expect(share).toHaveBeenCalledWith(
-      expect.objectContaining({ title: '店 a', url: 'https://www.hotpepper.jp/stra/' }),
-    );
-  });
-
-  it('共有できない端末では共有の導線を出さない', async () => {
-    const user = userEvent.setup();
-    allowGeolocation();
-    stubSearch(response([shop('a')]));
-    render(<App />);
-    await search(user);
-    await waitFor(() => expect(screen.getByRole('heading', { name: '店 a' })).toBeInTheDocument());
-
-    expect(screen.queryByRole('button', { name: 'みんなに共有' })).toBeNull();
-  });
-});
-
 /** 候補なしと条件緩和（FE-001 §14, §15）。 */
 describe('候補なし', () => {
   it('0件で候補なしを表示する', async () => {
@@ -622,21 +536,6 @@ describe('エラー', () => {
       expect(screen.getByText('現在地を取得できませんでした')).toBeInTheDocument(),
     );
     expect(screen.getByRole('button', { name: '再試行' })).toBeInTheDocument();
-  });
-
-  it('オフラインなら、その旨を添える', async () => {
-    const user = userEvent.setup();
-    allowGeolocation();
-    vi.stubGlobal('navigator', { ...navigator, onLine: false });
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() => Promise.reject(new Error('offline'))),
-    );
-    render(<App />);
-
-    await search(user);
-
-    await waitFor(() => expect(screen.getByText(/オフラインのようです/)).toBeInTheDocument());
   });
 
   it('通信に失敗すると再試行CTAが出る', async () => {
@@ -1008,7 +907,7 @@ describe('セッション復帰', () => {
   it('復帰後に現在地を取得できなければエラーを出す（無限ローディングにしない）', async () => {
     const user = userEvent.setup();
     seedSession([shop('a')], true);
-    const getCurrentPosition = denyGeolocation();
+    denyGeolocation();
     stubSearch(response([shop('b')], false));
     render(<App />);
 
@@ -1017,47 +916,6 @@ describe('セッション復帰', () => {
     await waitFor(() =>
       expect(screen.getByText('現在地を取得できませんでした')).toBeInTheDocument(),
     );
-    // 復帰直後の先読みとNG後の先読みで1回ずつ。失敗 → 即再試行 は繰り返さない
-    const calls = getCurrentPosition.mock.calls.length;
-    await new Promise((r) => setTimeout(r, 100));
-    expect(getCurrentPosition).toHaveBeenCalledTimes(calls);
-    expect(calls).toBeLessThanOrEqual(2);
-  });
-
-  it('先読みに失敗しても、表示中の店を残したまま再試行を繰り返さない', async () => {
-    seedSession([shop('a'), shop('b')], true);
-    sessionStorage.setItem(
-      'tsugidoko:geo',
-      JSON.stringify({ lat: 35.69, lng: 139.7, acquiredAt: Date.now() }),
-    );
-    const fetchMock = vi.fn(() => Promise.reject(new Error('offline')));
-    vi.stubGlobal('fetch', fetchMock);
-    render(<App />);
-
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    await new Promise((r) => setTimeout(r, 100));
-
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole('heading', { name: '店 a' })).toBeInTheDocument();
-    expect(screen.queryByText('店舗を取得できませんでした')).toBeNull();
-  });
-
-  it('先読みの失敗後、NGすると改めて先読みを試みる', async () => {
-    const user = userEvent.setup();
-    seedSession([shop('a'), shop('b')], true);
-    sessionStorage.setItem(
-      'tsugidoko:geo',
-      JSON.stringify({ lat: 35.69, lng: 139.7, acquiredAt: Date.now() }),
-    );
-    const fetchMock = vi.fn(() => Promise.reject(new Error('offline')));
-    vi.stubGlobal('fetch', fetchMock);
-    render(<App />);
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
-
-    await user.click(screen.getByRole('button', { name: /NG/ }));
-
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-    expect(screen.getByRole('heading', { name: '店 b' })).toBeInTheDocument();
   });
 });
 

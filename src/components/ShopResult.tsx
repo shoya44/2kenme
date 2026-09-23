@@ -1,5 +1,4 @@
 import { describeCondition, rangeLabel } from '../constants';
-import { canShare, shareShop } from '../services/share';
 import {
   CalendarIcon,
   CheckIcon,
@@ -9,7 +8,6 @@ import {
   ExternalLinkIcon,
   PhoneIcon,
   PinIcon,
-  ShareIcon,
   YenIcon,
 } from './icons';
 import styles from './ui.module.css';
@@ -40,8 +38,7 @@ export function ShopResult({ shop, condition, relaxNotice, onNg, onOk, disabled 
       <p className={styles.conditionSummary}>{describeCondition(condition)}</p>
 
       <div className={styles.photo}>
-        {/* 画面の主役なので遅延読み込みしない。次候補の分は App 側で先読みする */}
-        {shop.photoUrl && <img src={shop.photoUrl} alt="" decoding="async" />}
+        {shop.photoUrl && <img src={shop.photoUrl} alt="" loading="lazy" />}
       </div>
 
       <h2 className={styles.shopName}>{shop.name}</h2>
@@ -120,23 +117,6 @@ export function ShopResult({ shop, condition, relaxNotice, onNg, onOk, disabled 
             <ChevronRightIcon size={16} />
           </span>
         </a>
-
-        {/* 一緒にいる人へ店を送る導線。Web Share API が使える端末でだけ出す */}
-        {canShare() && (
-          <button
-            type="button"
-            className={`${styles.fact} ${styles.factButton}`}
-            onClick={() => void shareShop(shop)}
-          >
-            <span className={styles.factIcon}>
-              <ShareIcon size={15} />
-            </span>
-            <span>みんなに共有</span>
-            <span className={styles.factTail}>
-              <ChevronRightIcon size={16} />
-            </span>
-          </button>
-        )}
       </div>
 
       <div className={styles.actions}>
