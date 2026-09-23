@@ -441,6 +441,19 @@
   line-height: 1.6;
 }
 
+/* facts の行を button で作るときのリセット */
+.factButton {
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
 .factTail {
   margin-left: auto;
   display: flex;
@@ -597,6 +610,8 @@
   bottom: 0;
   max-height: 80dvh;
   overflow-y: auto;
+  /* シート内を最後までスクロールしても、裏の本文までスクロールしない */
+  overscroll-behavior: contain;
   background: var(--surface-raised);
   border-radius: 24px 24px 0 0;
   padding-bottom: calc(10px + var(--safe-bottom));
@@ -680,6 +695,13 @@
 .errorText {
   font-size: 15px;
   margin: 0 0 12px;
+}
+
+.errorHint {
+  margin: -6px 0 12px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
 }
 
 .visuallyHidden {

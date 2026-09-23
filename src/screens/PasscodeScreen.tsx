@@ -38,6 +38,7 @@ export function PasscodeScreen({ rejected, onSubmit }: Props) {
           type="password"
           value={value}
           autoComplete="current-password"
+          enterKeyHint="go"
           autoCapitalize="off"
           spellCheck={false}
           onChange={(e) => setValue(e.currentTarget.value)}

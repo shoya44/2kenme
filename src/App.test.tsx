@@ -421,6 +421,92 @@ describe('検索', () => {
   });
 });
 
+/** iPhoneでの体感（FE-001 §20, §33）。 */
+describe('結果画面の体感', () => {
+  it('結果画面へ移るとスクロール位置を先頭へ戻す', async () => {
+    const user = userEvent.setup();
+    allowGeolocation();
+    stubSearch(response([shop('a')]));
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    render(<App />);
+    scrollTo.mockClear();
+
+    await search(user);
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: '店 a' })).toBeInTheDocument());
+    expect(scrollTo).toHaveBeenCalledWith(0, 0);
+  });
+
+  it('次候補の写真を先読みする', async () => {
+    const user = userEvent.setup();
+    allowGeolocation();
+    stubSearch(
+      response([
+        shop('a', { photoUrl: 'https://example.com/a.jpg' }),
+        shop('b', { photoUrl: 'https://example.com/b.jpg' }),
+      ]),
+    );
+    const loaded: string[] = [];
+    class FakeImage {
+      set src(value: string) {
+        loaded.push(value);
+      }
+    }
+    vi.stubGlobal('Image', FakeImage);
+    render(<App />);
+
+    await search(user);
+
+    await waitFor(() => expect(screen.getByRole('heading', { level: 2 })).toBeInTheDocument());
+    // 表示中の店は img 要素で読むので、先読みするのは queue 先頭の1枚
+    const shown = screen.getByRole('heading', { level: 2 }).textContent;
+    const nextPhoto = shown === '店 a' ? 'https://example.com/b.jpg' : 'https://example.com/a.jpg';
+    expect(loaded).toEqual([nextPhoto]);
+  });
+
+  it('表示中の写真は遅延読み込みしない', async () => {
+    const user = userEvent.setup();
+    allowGeolocation();
+    stubSearch(response([shop('a', { photoUrl: 'https://example.com/a.jpg' })]));
+    render(<App />);
+
+    await search(user);
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: '店 a' })).toBeInTheDocument());
+    const img = document.querySelector('img');
+    expect(img).toHaveAttribute('src', 'https://example.com/a.jpg');
+    expect(img).not.toHaveAttribute('loading', 'lazy');
+  });
+
+  it('共有できる端末では、店名とURLを共有シートへ渡す', async () => {
+    const user = userEvent.setup();
+    allowGeolocation();
+    stubSearch(response([shop('a')]));
+    const share = vi.fn(() => Promise.resolve());
+    vi.stubGlobal('navigator', { ...navigator, share });
+    render(<App />);
+    await search(user);
+    await waitFor(() => expect(screen.getByRole('heading', { name: '店 a' })).toBeInTheDocument());
+
+    await user.click(screen.getByRole('button', { name: 'みんなに共有' }));
+
+    expect(share).toHaveBeenCalledWith(
+      expect.objectContaining({ title: '店 a', url: 'https://www.hotpepper.jp/stra/' }),
+    );
+  });
+
+  it('共有できない端末では共有の導線を出さない', async () => {
+    const user = userEvent.setup();
+    allowGeolocation();
+    stubSearch(response([shop('a')]));
+    render(<App />);
+    await search(user);
+    await waitFor(() => expect(screen.getByRole('heading', { name: '店 a' })).toBeInTheDocument());
+
+    expect(screen.queryByRole('button', { name: 'みんなに共有' })).toBeNull();
+  });
+});
+
 /** 候補なしと条件緩和（FE-001 §14, §15）。 */
 describe('候補なし', () => {
   it('0件で候補なしを表示する', async () => {
@@ -536,6 +622,21 @@ describe('エラー', () => {
       expect(screen.getByText('現在地を取得できませんでした')).toBeInTheDocument(),
     );
     expect(screen.getByRole('button', { name: '再試行' })).toBeInTheDocument();
+  });
+
+  it('オフラインなら、その旨を添える', async () => {
+    const user = userEvent.setup();
+    allowGeolocation();
+    vi.stubGlobal('navigator', { ...navigator, onLine: false });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.reject(new Error('offline'))),
+    );
+    render(<App />);
+
+    await search(user);
+
+    await waitFor(() => expect(screen.getByText(/オフラインのようです/)).toBeInTheDocument());
   });
 
   it('通信に失敗すると再試行CTAが出る', async () => {

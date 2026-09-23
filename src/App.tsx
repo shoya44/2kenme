@@ -68,6 +68,20 @@ export function App() {
     }
   }, [state]);
 
+  // 画面が変わったら先頭から見せる。トップ画面は縦に長く、下端の「さがす」を
+  // 押した時点のスクロール位置が結果画面に持ち越されて途中から見えてしまう
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [state.screen]);
+
+  // 次候補の写真を先に取っておく。NGの直後に写真が遅れて出るのを避ける（FE-001 §20）
+  useEffect(() => {
+    const next = state.queue[0]?.photoUrl;
+    if (next) {
+      new Image().src = next;
+    }
+  }, [state.queue]);
+
   // 画面を離れた時刻を控える。復帰までの間隔で再開の可否を決める（FE-001 §23）
   useEffect(() => {
     const onHidden = () => {
