@@ -54,7 +54,7 @@ export function ResultScreen({
         条件を変更
       </button>
 
-      <div className={styles.pushDown}>
+      <div style={{ marginTop: 'auto' }}>
         <HotpepperCredit />
       </div>
     </div>

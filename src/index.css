@@ -28,27 +28,6 @@ a {
   text-decoration: none;
 }
 
-/*
- * タップ操作の体感（iOS Safari）。
- * - manipulation: ダブルタップ判定待ちの遅延を無くす
- * - tap-highlight / touch-callout: タップ時の灰色フラッシュと長押しメニューを出さない
- */
-button,
-a,
-label,
-input[type='range'],
-summary {
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
-
-button,
-summary {
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
-}
-
 /* フォーカスリングを消さない（FE-001 §27） */
 :focus-visible {
   outline: 2px solid var(--accent);

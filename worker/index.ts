@@ -1,4 +1,4 @@
-import { assertAllowedOrigin, assertPasscode } from './auth';
+import { assertPasscode } from './auth';
 import { errorResponse, HttpError } from './http';
 import { UpstreamError } from './hotpepper';
 import { assertWithinRateLimit } from './ratelimit';
@@ -68,4 +68,22 @@ async function route(request: Request, env: WorkerEnv, pathname: string): Promis
   assertPasscode(request, env);
 
   return handleSearch(request, env);
+}
+
+/**
+ * 同一オリジンからの利用のみ許可する（BE-001 §5）。
+ *
+ * APIキー秘匿とは別の目的で、第三者によるHotPepperコール枠の消費を防ぐ。
+ * CORSヘッダは返さない。
+ */
+export function assertAllowedOrigin(request: Request, env: WorkerEnv): void {
+  // 静的アセットとAPIは同じWorkerが配信するため、許可すべきOriginは
+  // Worker自身のオリジン。未設定ならそれを使い、本番での設定を不要にする。
+  // 設定漏れで全リクエストが403になる事故も防げる
+  const allowed = env.ALLOWED_ORIGIN || new URL(request.url).origin;
+
+  const origin = request.headers.get('Origin');
+  if (origin === null || origin !== allowed) {
+    throw new HttpError(403, 'forbidden');
+  }
 }
